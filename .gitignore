@@ -1,0 +1,31 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+
+# node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# runtime data (recorded market data, bot state, logs)
+data/
+!backend/tests/fixtures/**
+*.log
+
+# os/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
