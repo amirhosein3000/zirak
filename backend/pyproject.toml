@@ -1,7 +1,7 @@
 [project]
-name = "tarazoo"
+name = "zirak"
 version = "0.1.0"
-description = "Tarazoo — an explainable, risk-first smart trader built for the Wallex hackathon"
+description = "Zirak — an explainable, risk-first smart trader built for the Wallex hackathon"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.115",
@@ -22,17 +22,17 @@ dev = [
 ]
 
 [project.scripts]
-tarazoo = "tarazoo.cli:main"
+zirak = "zirak.cli:main"
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["tarazoo*"]
+include = ["zirak*"]
 
 [tool.setuptools.package-data]
-tarazoo = ["py.typed"]
+zirak = ["py.typed"]
 
 [tool.ruff]
 line-length = 110
