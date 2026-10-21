@@ -40,7 +40,8 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
-ignore = ["RUF001", "RUF002", "RUF003"]  # Persian text legitimately contains "ambiguous" unicode
+# RUF001-3: Persian text legitimately contains "ambiguous" unicode. E501: the formatter owns line length.
+ignore = ["RUF001", "RUF002", "RUF003", "E501"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -51,6 +52,8 @@ plugins = []
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+# Tests mutate objects and re-check attributes, which mypy's narrowing flags as unreachable.
+disable_error_code = ["comparison-overlap"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

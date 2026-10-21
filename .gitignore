@@ -20,8 +20,8 @@ out/
 next-env.d.ts
 
 # runtime data (recorded market data, bot state, logs)
-data/
-!backend/tests/fixtures/**
+/data/
+backend/data/
 *.log
 
 # os/editor
