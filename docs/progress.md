@@ -1,6 +1,6 @@
 # Progress
 
-_Last updated: 2026-10-21_
+_Last updated: 2026-10-21 (end of kickoff session)_
 
 ## Done
 - [x] Name: **Zirak (زیرک)**. Private repo github.com/amirhosein3000/zirak (renamed from Tarazoo on 2026-10-21).
@@ -12,12 +12,20 @@ _Last updated: 2026-10-21_
 - [x] Backtester (same Bot path as paper), metrics vs buy-and-hold, JSON reports
 - [x] LLM layer (OpenAI-compatible + mock): Persian brief, Persian → strategy builder, trade explanations
 - [x] FastAPI app, `zirak` CLI, paper bot runner, kill switch (API + CLI + KILL file)
-- [x] Backend quality gates green: ruff, mypy --strict, 58 pytest tests
+- [x] Frontend PWA (Next.js 16, RTL, Vazirmatn, Jalali/Tehran time): market brief → Persian builder →
+      backtest report (equity vs buy-and-hold, drawdown) → paper dashboard → «چرا؟» explanations → kill switch.
+      Walked end to end in the browser at 375 px against the live API (2026-10-21).
+- [x] Kill switch verified three ways: dashboard button, `POST /api/kill`, and `zirak kill` from another process
+- [x] Dockerfiles + docker-compose.yml (api, web, recorder profile) — **untested: Docker isn't installed on this machine**
+- [x] docs/spec-day.md, docs/pitch.md (Persian), README
+- [x] Quality gates green: ruff, mypy --strict, 61 pytest tests, eslint, tsc, next build
 
-## In progress / next
-- [ ] Frontend (Next.js PWA, RTL, Vazirmatn): market brief → builder → backtest report (equity + drawdown) → paper dashboard → kill switch
-- [ ] Docker Compose (backend, frontend, recorder) — can't be tested locally (Docker isn't installed)
-- [ ] docs/spec-day.md, docs/pitch.md, README
+## Next
+1. **Unblock the exchange:** save docs into `docs/wallex-api/`, then implement `WallexClient` (public data
+   first), the recorder (`zirak record`: candles at several resolutions, order-book snapshots, trades →
+   SQLite) and the history backfill. Prove it with a short live run and replace the synthetic sample.
+2. Live-data paper runner (`DATA_SOURCE=wallex`): PaperExchange in book mode on the real order book.
+3. Prompt 1 from the prompts file (verify and harden), then prompt 2 (extra modules) and prompt 3 (strategy research).
 
 ## BLOCKED: Wallex API docs
 `docs/wallex-api/` does not exist yet. Until it does:
@@ -39,6 +47,9 @@ trades, account/balances, orders, WebSocket channels, rate limits, fees) as mark
 - The `x-api-key` header requirement for public endpoints.
 
 ## Open issues / notes
+- The recorder service in docker-compose restarts in a loop until `zirak record` is implemented (it's behind
+  the `recorder` profile, so it's off by default).
+- The browser preview needed CORS for port 3001; the API accepts any `localhost:<port>` origin plus `CORS_ORIGINS`.
 - `liara-hackathon-prompts.md` in the repo root is the user's file; it isn't tracked and nobody has touched it.
 - Backtest results on the synthetic sample are mostly negative vs buy-and-hold. That's expected and
   honest; real strategy research (prompt 3) needs real recorded data.

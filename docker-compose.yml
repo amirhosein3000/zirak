@@ -1,0 +1,36 @@
+# Zirak (زیرک): backend API, frontend PWA, and (optional) market-data recorder.
+#   docker compose up --build                     # api + web
+#   docker compose --profile recorder up -d       # also the recorder (BLOCKED until docs/wallex-api exists)
+# Secrets come from .env (see .env.example); never bake them into images.
+services:
+  api:
+    build: ./backend
+    env_file: [{ path: .env, required: false }]
+    environment:
+      DATA_DIR: /data
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+    volumes: [zirak-data:/data]
+    ports: ["8000:8000"]
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on: [api]
+    ports: ["3000:3000"]
+    restart: unless-stopped
+
+  recorder:
+    build: ./backend
+    profiles: [recorder]
+    command: ["zirak", "record"]
+    env_file: [{ path: .env, required: false }]
+    environment:
+      DATA_DIR: /data
+    volumes: [zirak-data:/data]
+    restart: unless-stopped
+
+volumes:
+  zirak-data:
