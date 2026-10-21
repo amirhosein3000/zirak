@@ -8,6 +8,7 @@ from typing import Any
 
 from zirak.i18n import fa_num, fa_pct, tehran_time
 from zirak.llm.provider import LLMProvider
+from zirak.markets import ASSET_NAMES_FA
 from zirak.models import ensure_utc
 
 REJECT_FA = {
@@ -52,15 +53,25 @@ def template_explanation(entry: dict[str, Any]) -> str:
         lines.extend(decision.get("notes_fa") or [])
         if entry.get("avg_price"):
             fee = Decimal(entry.get("fee") or "0")
+            asset = entry.get("fee_asset", "")
+            fee_dec = 0 if asset == "TMN" else 2 if asset == "USDT" else 8
             lines.append(
                 f"سفارش با میانگین قیمت {fa_num(Decimal(entry['avg_price']), 2)} اجرا شد"
-                + (f" و کارمزد {fa_num(fee, 6)} {entry.get('fee_asset', '')} پرداخت شد." if fee else ".")
+                + (
+                    f" و کارمزد {fa_num(fee, fee_dec)} {ASSET_NAMES_FA.get(asset, asset)} پرداخت شد."
+                    if fee
+                    else "."
+                )
             )
         if entry.get("pnl") is not None:
             pnl = Decimal(entry["pnl"])
             word = "سود" if pnl >= 0 else "زیان"
             pct = f" ({fa_pct(Decimal(entry['pnl_pct']))})" if entry.get("pnl_pct") else ""
-            lines.append(f"نتیجهٔ این فروش: {word} {fa_num(abs(pnl), 2)}{pct} پس از کسر کارمزد.")
+            quote = next((q for q in ("TMN", "USDT") if entry.get("symbol", "").endswith(q)), "")
+            amount = fa_num(abs(pnl), 0 if quote == "TMN" else 2)
+            lines.append(
+                f"نتیجهٔ این فروش: {word} {amount} {ASSET_NAMES_FA.get(quote, quote)}{pct} پس از کسر کارمزد."
+            )
     return " ".join(lines)
 
 

@@ -54,8 +54,16 @@ class Store:
     # ---- writes ----------------------------------------------------------------------------
     def save_candles(self, symbol: str, resolution: str, candles: Iterable[Candle]) -> int:
         rows = [
-            (symbol, resolution, c.ts.isoformat(), str(c.open), str(c.high), str(c.low), str(c.close),
-             str(c.volume))
+            (
+                symbol,
+                resolution,
+                c.ts.isoformat(),
+                str(c.open),
+                str(c.high),
+                str(c.low),
+                str(c.close),
+                str(c.volume),
+            )
             for c in candles
         ]
         with self.conn:
@@ -145,8 +153,14 @@ def write_candles_csv(path: Path, candles: Iterable[Candle]) -> None:
 def read_candles_csv(path: Path) -> list[Candle]:
     with path.open(encoding="utf-8") as f:
         return [
-            Candle(_ts(r["ts"]), Decimal(r["open"]), Decimal(r["high"]), Decimal(r["low"]),
-                   Decimal(r["close"]), Decimal(r["volume"]))
+            Candle(
+                _ts(r["ts"]),
+                Decimal(r["open"]),
+                Decimal(r["high"]),
+                Decimal(r["low"]),
+                Decimal(r["close"]),
+                Decimal(r["volume"]),
+            )
             for r in csv.DictReader(f)
         ]
 

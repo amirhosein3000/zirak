@@ -46,8 +46,9 @@ def _candles(closes: np.ndarray, market: Market, rng: np.random.Generator, vol_b
         def p(x: float) -> Decimal:
             return market.round_price(Decimal(str(x)))
 
-        out.append(Candle(start + timedelta(hours=i), p(o), p(h), p(lo), p(c),
-                          market.round_qty(Decimal(str(vol)))))
+        out.append(
+            Candle(start + timedelta(hours=i), p(o), p(h), p(lo), p(c), market.round_qty(Decimal(str(vol))))
+        )
         prev = c
     return out
 
@@ -56,8 +57,16 @@ def aggregate(candles: list[Candle], hours: int) -> list[Candle]:
     out: list[Candle] = []
     for i in range(0, len(candles) - hours + 1, hours):
         chunk = candles[i : i + hours]
-        out.append(Candle(chunk[0].ts, chunk[0].open, max(c.high for c in chunk), min(c.low for c in chunk),
-                          chunk[-1].close, sum((c.volume for c in chunk), Decimal(0))))
+        out.append(
+            Candle(
+                chunk[0].ts,
+                chunk[0].open,
+                max(c.high for c in chunk),
+                min(c.low for c in chunk),
+                chunk[-1].close,
+                sum((c.volume for c in chunk), Decimal(0)),
+            )
+        )
     return out
 
 

@@ -35,5 +35,29 @@ def fa_pct(value: float | Decimal, decimals: int = 1) -> str:
     return fa_num(value, decimals) + "٪"
 
 
+JALALI_MONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
+                 "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"]  # fmt: skip
+
+
+def gregorian_to_jalali(gy: int, gm: int, gd: int) -> tuple[int, int, int]:
+    """Standard arithmetic Gregorian -> Solar Hijri (Jalali) conversion."""
+    g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+    gy2 = gy + 1 if gm > 2 else gy
+    days = 355666 + 365 * gy + (gy2 + 3) // 4 - (gy2 + 99) // 100 + (gy2 + 399) // 400 + gd + g_d_m[gm - 1]
+    jy = -1595 + 33 * (days // 12053)
+    days %= 12053
+    jy += 4 * (days // 1461)
+    days %= 1461
+    if days > 365:
+        jy += (days - 1) // 365
+        days = (days - 1) % 365
+    if days < 186:
+        return jy, 1 + days // 31, 1 + days % 31
+    return jy, 7 + (days - 186) // 30, 1 + (days - 186) % 30
+
+
 def tehran_time(ts: datetime) -> str:
-    return fa_digits(ts.astimezone(TEHRAN).strftime("%Y-%m-%d %H:%M"))
+    """e.g. «۱۹ مهر ۱۴۰۵، ۱۸:۳۰» in Tehran time."""
+    t = ts.astimezone(TEHRAN)
+    jy, jm, jd = gregorian_to_jalali(t.year, t.month, t.day)
+    return fa_digits(f"{jd} {JALALI_MONTHS[jm - 1]} {jy}، {t:%H:%M}")

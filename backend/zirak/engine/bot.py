@@ -200,6 +200,15 @@ class Bot:
 
     async def _act(self, signal: Signal, view: PortfolioView, now: datetime) -> None:
         decision: RiskDecision = self.risk.review(signal, view)
+        prev = self.log[-1] if self.log else None
+        if (
+            not decision.approved
+            and prev is not None
+            and not prev.decision["approved"]
+            and prev.reason == signal.reason
+            and prev.decision["code"] == decision.code
+        ):
+            return  # same rejection as last candle: don't flood the log
         entry = LogEntry(
             id=len(self.log) + 1,
             ts=now,

@@ -14,7 +14,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from zirak.i18n import en_digits
+from zirak.i18n import en_digits, fa_pct
 from zirak.llm.provider import LLMProvider
 from zirak.strategy.spec import StrategySpec
 
@@ -160,11 +160,11 @@ def parse_rules(text: str, default_symbol: str | None = None) -> BuildResult:
                 warnings.append("بازهٔ زمانی ریزش/رشد مشخص نبود؛ ۲۴ ساعت گذشته در نظر گرفته شد.")
     if size is None:
         size = DEFAULT_SIZE
-        warnings.append(f"درصد سرمایه مشخص نبود؛ {int(DEFAULT_SIZE)}٪ در نظر گرفته شد.")
+        warnings.append(f"درصد سرمایه مشخص نبود؛ {fa_pct(DEFAULT_SIZE, 0)} در نظر گرفته شد.")
     if sl is None:
         sl = DEFAULT_STOP_LOSS
         warnings.append(
-            f"حد ضرر نگفته بودید؛ برای امنیت حد ضرر {int(DEFAULT_STOP_LOSS)}٪ اضافه شد (قابل تغییر)."
+            f"حد ضرر نگفته بودید؛ برای امنیت حد ضرر {fa_pct(DEFAULT_STOP_LOSS, 0)} اضافه شد (قابل تغییر)."
         )
     raw = {
         "name": text.strip()[:60] or "استراتژی من",
@@ -211,7 +211,7 @@ async def build_strategy(llm: LLMProvider, text: str, default_symbol: str | None
             warnings = []
             if spec.stop_loss_pct is None:
                 spec.stop_loss_pct = DEFAULT_STOP_LOSS
-                warnings.append(f"برای امنیت حد ضرر {int(DEFAULT_STOP_LOSS)}٪ اضافه شد (قابل تغییر).")
+                warnings.append(f"برای امنیت حد ضرر {fa_pct(DEFAULT_STOP_LOSS, 0)} اضافه شد (قابل تغییر).")
             return BuildResult(spec, spec.describe_fa(), warnings, llm.name)
         except (json.JSONDecodeError, ValidationError, TypeError):
             pass  # fall back to deterministic rules
