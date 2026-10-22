@@ -15,7 +15,8 @@ if [ -n "$(git -C "$ROOT" status --porcelain)" ]; then
   exit 1
 fi
 sh "$ROOT/scripts/liara-provision.sh" "$TARGET"
-set -- --api-token "$LIARA_API_TOKEN" --platform docker --build-location iran --message "commit $COMMIT"
+set -- --api-token "$LIARA_API_TOKEN" --platform docker --build-location iran --message "commit $COMMIT" \
+  --no-app-logs
 if [ -n "${LIARA_TEAM_ID:-}" ]; then
   set -- "$@" --team-id "$LIARA_TEAM_ID"
 fi
