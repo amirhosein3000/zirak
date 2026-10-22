@@ -350,3 +350,52 @@ def test_low_rate_limit_remaining_slows_down(settings: Settings, monkeypatch: py
     assert slept == []
     run(c.get_order_book("BTCTMN"))
     assert slept == [1.0]
+
+
+def test_credit_account_balances_and_package_limits(tmp_path: Path) -> None:
+    s = replace(live(tmp_path), wallex_credit_account=True, wallex_sub_account_client_id="sub-1")
+    fake = Fake(
+        {
+            "GET /v1/account/balances-detail": ok(
+                {
+                    "TMN": {"symbol": "TMN", "total": "5000000", "freeze": "250000", "available": "4750000"},
+                    "BTC": {"symbol": "BTC", "total": "0.001", "freeze": "0", "available": "0.001"},
+                }
+            ),
+            "GET /v1/prop/user/packages/active": ok(
+                {
+                    "packageDetail": {"startBalance": "5000000", "currency": "TMN"},
+                    "userPackageDetail": {
+                        "status": "active",
+                        "warningLimit": "4800000",
+                        "liquidityLimit": "4700000",
+                        "profit": "12000",
+                        "profitPercentage": "0.24",
+                    },
+                }
+            ),
+            "GET /v1/prop/packages/7": ok({"detail": {"id": 7}, "unavailableMarkets": ["WTMN", "METMN"]}),
+        }
+    )
+    c = client(s, fake)
+    bal = run(c.get_balances())
+    assert (
+        bal["TMN"].free == D("4750000")
+        and bal["TMN"].locked == D("250000")
+        and bal["TMN"].total == D("5000000")
+    )
+    assert bal["BTC"].free == D("0.001")
+    assert fake.calls[0].headers["sub-account-client-id"] == "sub-1"
+    pkg = run(c.get_active_package())
+    assert pkg["liquidity_limit"] == D("4700000") and pkg["start_balance"] == D("5000000")
+    assert run(c.get_unavailable_markets("7")) == ["WTMN", "METMN"]
+    with pytest.raises(ValueError):
+        run(c.get_unavailable_markets("7/../x"))
+
+
+def test_credit_calls_are_guarded_without_a_key(settings: Settings) -> None:
+    c = client(settings, Fake({}))
+    with pytest.raises(LiveTradingDisabled):
+        run(c.get_balances_detail())
+    with pytest.raises(LiveTradingDisabled):
+        run(c.get_active_package())

@@ -59,6 +59,10 @@ class Settings:
     wallex_ws_v1_url: str = "wss://api.wallex.ir/ws"  # deprecated v1, used as fallback
     wallex_use_system_proxy: bool = False  # the local HTTPS proxy breaks TLS to Wallex
     wallex_timeout_s: float = 20.0
+    # Challenge / credit ("trading credit", prop) sub-account: own API key and wallet. Read-only prop calls.
+    wallex_credit_account: bool = False  # balances from /v1/account/balances-detail (total/freeze/available)
+    wallex_sub_account_client_id: str | None = None  # sent as `sub-account-client-id` on prop/balance calls
+    wallex_prop_package_id: str | None = None  # to read the package's unavailableMarkets
     data_source: str = "replay"  # "replay" (offline) or "wallex" (live public data)
     markets: list[str] = field(default_factory=lambda: ["USDTTMN", "BTCTMN", "BTCUSDT", "ETHTMN", "ETHUSDT"])
 
@@ -136,6 +140,9 @@ def load_settings(env_file: str | Path | None = None) -> Settings:
         wallex_ws_v1_url=_str("WALLEX_WS_V1_URL", "wss://api.wallex.ir/ws"),
         wallex_use_system_proxy=_bool("WALLEX_USE_SYSTEM_PROXY", False),
         wallex_timeout_s=float(_str("WALLEX_TIMEOUT_S", "20")),
+        wallex_credit_account=_bool("WALLEX_CREDIT_ACCOUNT", False),
+        wallex_sub_account_client_id=os.getenv("WALLEX_SUB_ACCOUNT_CLIENT_ID") or None,
+        wallex_prop_package_id=os.getenv("WALLEX_PROP_PACKAGE_ID") or None,
         data_source=_str("DATA_SOURCE", "replay"),
         markets=_list("MARKETS", "USDTTMN,BTCTMN,BTCUSDT,ETHTMN,ETHUSDT"),
         fee_taker_pct=_dec("FEE_TAKER_PCT", "0.25") or Decimal("0.25"),
