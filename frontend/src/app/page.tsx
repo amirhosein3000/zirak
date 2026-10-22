@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { MoodGauge } from "@/components/Gauges";
 import { LineChart } from "@/components/LineChart";
+import { TimeMachineButton } from "@/components/TimeMachine";
 import { Badge, Card, ErrorBox, Skeleton, Stat } from "@/components/ui";
 import { api, type Brief, type CandleRow, type MarketRow } from "@/lib/api";
 import { faNum, faPct, money, priceDecimals, signClass, tehranTime } from "@/lib/fa";
@@ -18,8 +20,12 @@ export default function MarketsPage() {
   const [error, setError] = useState<string | null>(null);
   const symbol = app.symbol;
 
+  // Prices refresh every 15 s (live Wallex data in DATA_SOURCE=wallex, recorded data otherwise).
   useEffect(() => {
-    api.markets().then(setMarkets).catch((e: Error) => setError(e.message));
+    const load = () => api.markets().then(setMarkets).catch((e: Error) => setError(e.message));
+    load();
+    const t = setInterval(load, 15000);
+    return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
@@ -67,6 +73,24 @@ export default function MarketsPage() {
           })}
         </div>
       </div>
+
+      {brief && (
+        <Card title={<>حال بازار {market?.name_fa ?? ""} از نگاه زیرک</>}>
+          <div className="grid grid-cols-[1fr_1.1fr] items-center gap-3">
+            <MoodGauge score={brief.facts.mood_score} label={brief.facts.mood_fa} />
+            <div className="text-[12.5px] leading-6 text-muted">
+              ترکیبی از روند، شتاب قیمت، تغییر ۲۴ ساعته و فشار خریداران و فروشندگان در دفتر سفارش.
+              <span className="mt-1 block font-bold text-text">
+                {brief.facts.mood_score >= 70
+                  ? "بازار هیجانی است؛ خرید در اوج یکی از رایج‌ترین اشتباه‌هاست."
+                  : brief.facts.mood_score <= 30
+                    ? "بازار ترسیده است؛ فروش از سر ترس معمولاً بدترین تصمیم است."
+                    : "بازار آرام است؛ زمان خوبی برای ساختن یک برنامهٔ منظم."}
+              </span>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <Card
         title={<>تحلیل هوشمند {market?.name_fa ?? ""}</>}
@@ -117,12 +141,15 @@ export default function MarketsPage() {
         )}
       </Card>
 
-      <Link
-        href="/build"
-        className="flex min-h-12 items-center justify-center rounded-xl bg-primary text-[15px] font-bold text-white"
-      >
-        ساخت استراتژی برای {market?.name_fa ?? "این بازار"} ←
-      </Link>
+      <div className="grid gap-2">
+        <Link
+          href="/build"
+          className="flex min-h-12 items-center justify-center rounded-xl bg-primary text-[15px] font-bold text-white"
+        >
+          ساخت استراتژی برای {market?.name_fa ?? "این بازار"} ←
+        </Link>
+        <TimeMachineButton symbol={symbol} />
+      </div>
     </>
   );
 }

@@ -70,6 +70,11 @@ export default function DashboardPage() {
       >
         ⏻ کلید توقف اضطراری
       </Button>
+      {status?.mode === "live" && status.running && (
+        <div className="animate-pulse rounded-xl bg-danger p-3 text-center text-sm font-bold text-white">
+          ⚠️ معاملهٔ واقعی با پول واقعی در جریان است
+        </div>
+      )}
       {notice && <div className="rounded-xl bg-primary-soft p-3 text-sm text-primary">{notice}</div>}
       <ErrorBox message={error ?? status?.error ?? null} />
 
@@ -95,7 +100,9 @@ export default function DashboardPage() {
           >
             <p className="text-xs text-muted">
               {bot.symbol} · کندل {RESOLUTION_FA[bot.resolution] ?? bot.resolution} ·{" "}
-              {status.mode === "paper-live" ? (
+              {status.mode === "live" ? (
+                <b className="text-danger">معاملهٔ واقعی روی والکس · {faNum(status.progress.done, 0)} کندل جدید</b>
+              ) : status.mode === "paper-live" ? (
                 <>حالت کاغذی روی دادهٔ زندهٔ والکس · {faNum(status.progress.done, 0)} کندل جدید</>
               ) : (
                 <>حالت کاغذی روی دادهٔ بازپخش · {faNum(status.progress.done, 0)} از {faNum(status.progress.total, 0)} کندل</>
@@ -129,6 +136,25 @@ export default function DashboardPage() {
                 </Button>
               )}
             </div>
+          </Card>
+
+          <ShieldStrip log={status.log} />
+
+          <Card title="قیمت و تصمیم‌های ربات">
+            {status.equity_curve.length > 1 ? (
+              <LineChart
+                ariaLabel="نمودار زندهٔ قیمت با نشانگر تصمیم‌ها"
+                x={status.equity_curve.map((p) => p.ts)}
+                series={[{ name: "قیمت", color: "var(--chart-1)", values: status.equity_curve.map((p) => p.price) }]}
+                format={(v) => faNum(v, dec)}
+                markers={status.log
+                  .filter((e) => !e.decision.approved || Number(e.filled_qty) > 0)
+                  .map((e) => ({ ts: e.ts, side: e.side, label: e.note_fa, blocked: !e.decision.approved }))}
+                height={170}
+              />
+            ) : (
+              <Skeleton className="h-40" />
+            )}
           </Card>
 
           <Card title="ارزش سرمایه (زنده)">
@@ -167,5 +193,21 @@ export default function DashboardPage() {
         </>
       )}
     </>
+  );
+}
+
+function ShieldStrip({ log }: { log: BotStatus["log"] }) {
+  const blocked = log.filter((e) => !e.decision.approved).length;
+  const exits = log.filter((e) => ["stop_loss", "daily_loss_limit"].includes(e.reason) && e.decision.approved).length;
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary-soft p-3">
+      <span className="text-2xl" aria-hidden>
+        🛡️
+      </span>
+      <div className="text-[13px] leading-6">
+        <b>سپر ریسک فعال است.</b> تا الان {faNum(blocked, 0)} بار جلوی یک معاملهٔ پرخطر را گرفت و {faNum(exits, 0)} بار با حد ضرر از
+        زیان بیشتر جلوگیری کرد.
+      </div>
+    </div>
   );
 }

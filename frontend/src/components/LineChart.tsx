@@ -11,6 +11,14 @@ export type Series = {
   dashed?: boolean;
 };
 
+export type Marker = {
+  ts: string;
+  side: "buy" | "sell";
+  label: string;
+  /** a signal the risk manager blocked: drawn hollow */
+  blocked?: boolean;
+};
+
 type Props = {
   x: string[]; // ISO timestamps (UTC)
   series: Series[];
@@ -20,6 +28,8 @@ type Props = {
   area?: boolean;
   baseline?: number;
   ariaLabel: string;
+  /** trade markers drawn on the first series (buy ▲ / sell ▼); hover shows their labels */
+  markers?: Marker[];
 };
 
 const PAD = { top: 12, right: 8, bottom: 22, left: 8 };
@@ -30,7 +40,7 @@ const Y_TICKS = 3;
  * listing every series, legend for >= 2 series and direct labels at the line ends, plus a table view.
  * Time runs left -> right even in RTL pages, which is the convention for price charts.
  */
-export function LineChart({ x, series, height = 200, format, area = false, baseline, ariaLabel }: Props) {
+export function LineChart({ x, series, height = 200, format, area = false, baseline, ariaLabel, markers = [] }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(340);
   const [hover, setHover] = useState<number | null>(null);
@@ -58,6 +68,25 @@ export function LineChart({ x, series, height = 200, format, area = false, basel
     const pad = Math.max((hi - lo) * 0.08, Math.abs(hi) * 0.005, 1e-9);
     return { min: lo - pad, max: hi + pad };
   }, [series, baseline]);
+
+  // Place each marker on the last candle at or before its time (binary search on the time axis).
+  const placed = useMemo(() => {
+    const times = x.map((t) => Date.parse(t));
+    const byIndex = new Map<number, Marker[]>();
+    for (const m of markers) {
+      const t = Date.parse(m.ts);
+      let lo = 0;
+      let hi = times.length - 1;
+      if (!times.length || t < times[0]) continue;
+      while (lo < hi) {
+        const mid = (lo + hi + 1) >> 1;
+        if (times[mid] <= t) lo = mid;
+        else hi = mid - 1;
+      }
+      byIndex.set(lo, [...(byIndex.get(lo) ?? []), m]);
+    }
+    return byIndex;
+  }, [x, markers]);
 
   if (n < 2) return <div className="py-8 text-center text-sm text-muted">دادهٔ کافی برای نمودار نیست.</div>;
 
@@ -130,6 +159,23 @@ export function LineChart({ x, series, height = 200, format, area = false, basel
               strokeDasharray={s.dashed ? "5 4" : undefined}
             />
           ))}
+          {series[0] &&
+            [...placed.entries()].map(([i, ms]) => {
+              const m = ms[ms.length - 1];
+              const cx = sx(i);
+              const cy = sy(series[0].values[i]);
+              const color = m.blocked ? "var(--muted)" : m.side === "buy" ? "var(--up)" : "var(--down)";
+              const d = m.side === "buy" ? `M${cx},${cy + 5} l-5,9 h10 z` : `M${cx},${cy - 5} l-5,-9 h10 z`;
+              return (
+                <path
+                  key={i}
+                  d={d}
+                  fill={m.blocked ? "var(--surface)" : color}
+                  stroke={m.blocked ? color : "var(--surface)"}
+                  strokeWidth={m.blocked ? 1.5 : 1}
+                />
+              );
+            })}
           {labelRoom > 0 &&
             series.map((s) => (
               <text key={s.name} x={sx(n - 1) + 6} y={sy(s.values[n - 1]) + 4} fontSize="10.5" fill="var(--text)" fontWeight="700">
@@ -158,6 +204,12 @@ export function LineChart({ x, series, height = 200, format, area = false, basel
             style={sx(hover) > width / 2 ? { left: 8 } : { right: 8 }}
           >
             <div className="mb-1 text-muted">{tehranTime(x[hover])}</div>
+            {(placed.get(hover) ?? []).map((m, k) => (
+              <div key={`m${k}`} className={`mb-1 max-w-56 leading-5 ${m.blocked ? "text-muted" : m.side === "buy" ? "text-up" : "text-down"}`}>
+                {m.blocked ? "⛔ " : m.side === "buy" ? "▲ " : "▼ "}
+                {m.label}
+              </div>
+            ))}
             {series.map((s) => (
               <div key={s.name} className="flex items-center justify-between gap-3">
                 <span className="inline-flex items-center gap-1.5 text-muted">

@@ -89,13 +89,14 @@ GRADES = [(80, "A", "عالی"), (65, "B", "خوب"), (50, "C", "متوسط"), (
 
 
 def zirak_score(m: dict[str, Any]) -> dict[str, Any]:
-    """0-100: profit (30), capital protection (35), edge over buy-and-hold (20), consistency (15)."""
+    """0-100: profit (20), capital protection (30), edge over buy-and-hold (35), consistency (15).
+    Edge weighs most, so a strategy that loses little in a crash still scores fairly."""
     ret, dd = float(m["return_pct"]), float(m["max_drawdown_pct"])
     bh, bh_dd = float(m["buy_hold_return_pct"]), float(m["buy_hold_max_drawdown_pct"])
     trades, win = int(m["trades"]), float(m["win_rate_pct"])
-    profit = 30 * _clamp(0.5 + ret / 20)
-    protection = 35 * _clamp(1 - abs(dd) / 25)
-    edge = 20 * _clamp(0.5 + (ret - bh) / 30 + (dd - bh_dd) / 60)
+    profit = 20 * _clamp(0.5 + ret / 20)
+    protection = 30 * _clamp(1 - abs(dd) / 25)
+    edge = 35 * _clamp(0.5 + (ret - bh) / 30 + (dd - bh_dd) / 60)
     consistency = 15 * (_clamp(win / 70) if trades >= 3 else 0.3)
     score = round(profit + protection + edge + consistency)
     grade, grade_fa = next((g, fa) for floor, g, fa in GRADES if score >= floor)
@@ -166,8 +167,13 @@ def risk_shield(protected: dict[str, Any], naked: dict[str, Any], quote: str) ->
         )
     elif saved_quote > 0:
         msg = f"سپر ریسک {fa_num(saved_quote, dec)} {unit} نتیجه را بهتر کرد."
+    elif saved_quote < 0:
+        msg = (
+            f"صادقانه: در این دوره حد ضرر چند بار زودتر از بازار خارج شد و بدون سپر نتیجه "
+            f"{fa_num(-saved_quote, dec)} {unit} بهتر بود. سپر برای روزهای بد است، نه برای همهٔ روزها."
+        )
     else:
-        msg = "در این دوره سپر ریسک تفاوت مثبتی ایجاد نکرد؛ بازار آرام بود یا استراتژی خودش محتاط است."
+        msg = "در این دوره سپر ریسک لازم نشد؛ بازار آرام بود یا استراتژی خودش محتاط است."
     return {
         "saved_quote": round(saved_quote, 2),
         "drawdown_cut_pct": round(dd_cut, 2),

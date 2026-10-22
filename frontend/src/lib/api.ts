@@ -81,6 +81,8 @@ export type Facts = {
   book_imbalance_pct: number | null;
   spread_pct: number | null;
   book_synthetic: boolean;
+  mood_score: number;
+  mood_fa: string;
 };
 
 export type Brief = { symbol: string; brief_fa: string; source: string; facts: Facts; as_of: string; data: string };
@@ -167,7 +169,7 @@ export type Report = {
   symbol: string;
   quote: string;
   resolution: string;
-  period: { start: string; end: string; candles: number };
+  period: PeriodInfo;
   strategy: { key: string; title_fa: string; params: Record<string, unknown> };
   risk: Record<string, unknown>;
   costs: { fee_taker_pct: string; fee_maker_pct: string; slippage_bps: string; participation: string };
@@ -177,6 +179,57 @@ export type Report = {
   equity_curve: CurvePoint[];
   trades: LogEntry[];
   meta: { data?: string; spec?: StrategySpec | null };
+  score: Score;
+  shield: Shield;
+};
+
+export type PeriodKey = "30d" | "90d" | "180d" | "365d" | "all" | "crash";
+export type PeriodInfo = { key: PeriodKey; title_fa: string; note_fa: string; start: string; end: string; candles: number };
+
+export type Score = {
+  score: number;
+  grade: "A" | "B" | "C" | "D" | "E";
+  grade_fa: string;
+  headline_fa: string;
+  details_fa: string;
+  components: { profit: number; protection: number; edge: number; consistency: number };
+};
+
+export type Shield = {
+  saved_quote: number;
+  drawdown_cut_pct: number;
+  blocked_orders: number;
+  risk_exits: number;
+  message_fa: string;
+  with_shield: { return_pct: number; max_drawdown_pct: number; end_equity: number };
+  without_shield: { return_pct: number; max_drawdown_pct: number; end_equity: number };
+  without_curve: { ts: string; equity: number }[];
+};
+
+export type DuelRow = {
+  key: string;
+  title_fa: string;
+  mine: boolean;
+  emotional: boolean;
+  return_pct: number;
+  max_drawdown_pct: number;
+  trades: number;
+  win_rate_pct: number;
+  score: number;
+  grade: string;
+  rank: number;
+};
+export type Duel = { symbol: string; resolution: string; quote: string; period: PeriodInfo; rows: DuelRow[]; headline_fa: string };
+
+export type PreflightCheck = { key: string; ok: boolean; title_fa: string; detail_fa: string; required: boolean };
+export type Preflight = {
+  ready: boolean;
+  checks: PreflightCheck[];
+  balances: Record<string, string>;
+  fees: Record<string, { maker: string; taker: string }>;
+  confirm_phrase: string;
+  max_slippage_bps: string;
+  order_ttl_s: number;
 };
 
 export type Order = {
@@ -234,6 +287,7 @@ export type RunRequest = {
   spec?: StrategySpec | null;
   risk?: Record<string, unknown>;
   speed_s?: number;
+  period?: PeriodKey;
 };
 
 // ---- endpoints -------------------------------------------------------------------------------
@@ -254,4 +308,7 @@ export const api = {
   botExplain: (id: number) => call<{ id: number; explanation_fa: string }>(`/api/bot/log/${id}/explain`),
   kill: () => post<BotStatus & { killed: boolean; canceled_orders: string[] }>("/api/kill"),
   killReset: () => post<BotStatus>("/api/kill/reset"),
+  duel: (req: RunRequest) => post<Duel>("/api/duel", req),
+  preflight: () => call<Preflight>("/api/live/preflight"),
+  liveStart: (req: RunRequest & { confirm: string }) => post<BotStatus>("/api/live/start", req),
 };

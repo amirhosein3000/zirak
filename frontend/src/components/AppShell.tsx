@@ -11,6 +11,7 @@ const NAV = [
   { href: "/build", label: "استراتژی", icon: "M4 6h16M4 12h10M4 18h7" },
   { href: "/backtest", label: "بک‌تست", icon: "M4 19V5M4 19h16M8 15l3-4 3 2 4-6" },
   { href: "/dashboard", label: "داشبورد", icon: "M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" },
+  { href: "/safety", label: "ایمنی", icon: "M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6zM9 12l2 2 4-4" },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -70,7 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <footer className="px-4 pb-24 text-center text-[11px] text-muted">ساخته‌شده برای هکاتون والکس · محصول مستقل، غیررسمی</footer>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/95 backdrop-blur" aria-label="ناوبری اصلی">
-        <ul className="mx-auto grid max-w-xl grid-cols-4">
+        <ul className="mx-auto grid max-w-xl grid-cols-5">
           {NAV.map((item) => {
             const active = item.href === "/" ? path === "/" : path.startsWith(item.href);
             return (
