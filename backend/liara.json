@@ -1,0 +1,11 @@
+{
+  "app": "zirak-api",
+  "port": 8000,
+  "platform": "docker",
+  "disks": [
+    {
+      "name": "zirak-data",
+      "mountTo": "/data"
+    }
+  ]
+}

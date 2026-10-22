@@ -20,6 +20,49 @@
 
 ---
 
+## مسیر پیشنهادی: دیپلوی روی لیارا (سرورهای ایران، با حساب تیم)
+لیارا در ایران است، پس ربات مستقیم به API والکس دسترسی دارد و سرور جدا لازم نیست. دو اپ ساخته می‌شود:
+`zirak-api` (API + عامل معاملاتی در یک کانتینر، با دیسک دائمی برای داده‌ها) و `zirak-web` (داشبورد).
+
+**یک بار در پنل لیارا (بخش تیم):**
+1. در تیم، دو اپ از نوع **Docker** بسازید: `zirak-api` و `zirak-web` (اگر نام دیگری گذاشتید، در GitHub متغیرهای
+   `LIARA_API_APP` و `LIARA_WEB_APP` را تنظیم کنید).
+2. برای `zirak-api` یک **دیسک** به نام `zirak-data` بسازید (حداقل ۱ گیگ). در `backend/liara.json` به `/data` وصل می‌شود.
+3. **متغیرهای محیطی** اپ `zirak-api` را در پنل لیارا (تنظیمات ← متغیرها) وارد کنید؛ کلیدها **فقط** همین‌جا، نه در گیت‌هاب:
+   ```
+   WALLEX_API_KEY=<کلید حساب اعتباری چالش>       WALLEX_CREDIT_ACCOUNT=true
+   WALLEX_SUB_ACCOUNT_CLIENT_ID=...               WALLEX_PROP_PACKAGE_ID=...
+   MOCK_LLM=false  LLM_BASE_URL=...  LLM_API_KEY=...  LLM_MODEL=...
+   LIVE_TRADING=false  MAX_ORDER_TMN=1500000  MAX_ORDER_USDT=50  DAILY_LOSS_LIMIT_PCT=2.5
+   DATA_SOURCE=wallex  CORS_ORIGINS=https://zirak-web.liara.run
+   ZIRAK_AGENT=shadow          # off | shadow | live | live,shadow
+   ZIRAK_BOOTSTRAP=true        # بار اول: دانلود سابقهٔ قیمت + آموزش مدل، خودکار
+   ```
+4. یک **توکن API** از حساب کاربری لیارا و **شناسهٔ تیم** (Team ID) را بردارید.
+
+**یک بار در گیت‌هاب:** Settings ← Secrets and variables ← Actions ← New repository secret:
+`LIARA_API_TOKEN` = توکن لیارا، `LIARA_TEAM_ID` = شناسهٔ تیم.
+
+**هر بار دیپلوی:** Actions ← **Deploy to Liara** ← Run workflow (`both`). اول همهٔ تست‌ها اجرا می‌شوند، بعد دو اپ در
+لیارا (ساخت در ایران) دیپلوی می‌شوند و commit دیپلوی‌شده در هر اجرای ربات ثبت می‌شود.
+از سیستم خودتان هم می‌شود: `LIARA_API_TOKEN=... LIARA_TEAM_ID=... sh scripts/deploy-liara.sh both`
+
+**بعد از دیپلوی:**
+- داشبورد: `https://zirak-web.liara.run/agent` · سلامت API: `https://zirak-api.liara.run/api/health`
+- دستورها داخل کانتینر (کنسول اپ در پنل لیارا یا `liara shell --app zirak-api --team-id <TEAM_ID>`):
+  `zirak agent report /data/runs/challenge-shadow`، `zirak agent probe --symbol USDTTMN --yes` (مرحلهٔ ۲)، `zirak kill`
+- رفتن به معاملهٔ واقعی (بعد از مراحل ۱ تا ۳ و تأیید تیم): در متغیرهای لیارا `LIVE_TRADING=true` و
+  `ZIRAK_AGENT=live,shadow` بگذارید و اپ را ری‌استارت کنید (`liara app restart --app zirak-api --team-id <TEAM_ID>`).
+- ربات اگر خطا بدهد خودکار دوباره بالا می‌آید و از همان‌جا ادامه می‌دهد؛ بعد از `zirak kill` خاموش می‌ماند.
+
+> ⛔ هیچ توکن یا کلیدی را در `.env.example` یا هر فایل دیگری که در گیت است ننویسید؛ آن فایل عمومی است. جای کلیدها:
+> متغیرهای پنل لیارا، Secrets گیت‌هاب، یا فایل `.env` محلی (که در گیت نیست). اگر کلیدی تا حالا جایی commit یا ارسال شده،
+> همان را باطل کنید و کلید جدید بسازید.
+
+**مسیر جایگزین (بدون لیارا):** مراحل ۰ تا ۶ زیر روی یک VPS داخل ایران با Docker.
+
+---
+
 ## مرحلهٔ ۰ — آماده‌سازی (یک بار)
 1. **سرور:** یک VPS لینوکسی داخل ایران با Docker (پیشنهادی؛ سه روز بدون قطعی = امتیاز «پایداری»).
    لپ‌تاپ هم می‌شود، ولی نباید خاموش شود یا به خواب برود.
@@ -133,7 +176,7 @@ docker compose exec agent-shadow zirak agent report /data/runs/challenge-shadow
 5. push و تگ: `git tag challenge-final && git push origin challenge-final`
 
 ## چک‌لیست سریع
-- [ ] سرور داخل ایران + Docker
+- [ ] اپ‌های `zirak-api` و `zirak-web` + دیسک `zirak-data` در تیم لیارا، متغیرهای اپ، Secrets گیت‌هاب (یا: سرور داخل ایران + Docker)
 - [ ] `.env` کامل (کلید حساب اعتباری، LLM، سقف‌ها، `LIVE_TRADING=false`)
 - [ ] زمان شروع/پایان در `challenge.json` به UTC
 - [ ] backfill → train → backtest → verify (ok)

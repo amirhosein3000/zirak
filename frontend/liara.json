@@ -1,0 +1,5 @@
+{
+  "app": "zirak-web",
+  "port": 3000,
+  "platform": "docker"
+}

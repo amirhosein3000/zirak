@@ -1,0 +1,80 @@
+# Deploy Zirak to Liara (servers in Iran, so the agent can reach api.wallex.ir).
+#
+# Manual only (Actions -> "Deploy to Liara" -> Run workflow): during the challenge the code that trades must
+# not change on its own, and every run's manifest records the deployed commit.
+#
+# Repository secrets (Settings -> Secrets and variables -> Actions):
+#   LIARA_API_TOKEN   Liara API token (from the team's account)
+#   LIARA_TEAM_ID     Liara team id (leave unset to deploy to the token owner's personal account)
+# Optional repository variables: LIARA_API_APP (default zirak-api), LIARA_WEB_APP (default zirak-web),
+#   LIARA_API_URL (default https://<api app>.liara.run, baked into the web app).
+# Trading secrets (WALLEX_API_KEY, LLM_*, ...) are NOT stored in GitHub: set them on the Liara app (see DEPLOY.md).
+name: Deploy to Liara
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "What to deploy"
+        type: choice
+        options: [both, api, web]
+        default: both
+
+concurrency:
+  group: liara-deploy
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Backend quality gates
+        working-directory: backend
+        run: |
+          pip install -e ".[dev]"
+          ruff check . && ruff format --check . && mypy zirak tests && python -m pytest -q
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Frontend quality gates
+        working-directory: frontend
+        run: npm ci && npm run lint && npx tsc --noEmit
+
+  deploy:
+    needs: checks
+    runs-on: ubuntu-latest
+    env:
+      LIARA_API_TOKEN: ${{ secrets.LIARA_API_TOKEN }}
+      LIARA_TEAM_ID: ${{ secrets.LIARA_TEAM_ID }}
+      API_APP: ${{ vars.LIARA_API_APP || 'zirak-api' }}
+      WEB_APP: ${{ vars.LIARA_WEB_APP || 'zirak-web' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install the Liara CLI
+        run: npm install -g @liara/cli
+      - name: Check the token is set
+        run: test -n "$LIARA_API_TOKEN" || { echo "::error::set the LIARA_API_TOKEN repository secret"; exit 1; }
+      - name: Deploy the API + trading agent
+        if: inputs.target != 'web'
+        working-directory: backend
+        run: |
+          liara deploy --app "$API_APP" --api-token "$LIARA_API_TOKEN" ${LIARA_TEAM_ID:+--team-id "$LIARA_TEAM_ID"} \
+            --platform docker --port 8000 --build-location iran \
+            --build-arg "GIT_COMMIT=${GITHUB_SHA}" --message "commit ${GITHUB_SHA}" --no-app-logs
+      - name: Deploy the web app
+        if: inputs.target != 'api'
+        working-directory: frontend
+        env:
+          API_URL: ${{ vars.LIARA_API_URL }}
+        run: |
+          liara deploy --app "$WEB_APP" --api-token "$LIARA_API_TOKEN" ${LIARA_TEAM_ID:+--team-id "$LIARA_TEAM_ID"} \
+            --platform docker --port 3000 --build-location iran \
+            --build-arg "NEXT_PUBLIC_API_URL=${API_URL:-https://$API_APP.liara.run}" \
+            --message "commit ${GITHUB_SHA}" --no-app-logs
