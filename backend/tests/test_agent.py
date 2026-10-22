@@ -509,3 +509,32 @@ def test_mcp_server_is_read_only(tmp_path: Path) -> None:
     )
     snap = asyncio.run(server.call_tool("market_snapshot", {"symbol": "BTCTMN"}))
     assert "rsi_14" in str(snap)
+
+
+def test_unfilled_exit_is_repriced_after_its_ttl(tmp_path: Path) -> None:
+    from zirak.agent.engine import EXIT_TTL_S, Position
+
+    agent, paper, clock = make_agent(tmp_path)
+    paper._free["BTC"] = D("0.001")
+    paper.set_last_price("BTCTMN", D("10000000000"))
+    agent.last_price["BTCTMN"] = D("10000000000")
+    pos = Position(
+        "BTCTMN",
+        "mean_reversion",
+        "D1",
+        D("0.001"),
+        D("10000000"),
+        D("10000000000"),
+        D("9800000000"),
+        D("10300000000"),
+        T0.isoformat(),
+        16,
+    )
+    agent.positions["BTCTMN"] = pos
+    asyncio.run(agent.exit_position(pos, "stop_loss", T0))
+    first = pos.exit_order_id
+    assert first is not None
+    clock.now = T0 + timedelta(seconds=EXIT_TTL_S + 1)
+    asyncio.run(agent.on_tick(clock.now))
+    assert pos.exit_order_id not in (None, first), "a stale exit must be canceled and sent again"
+    assert not asyncio.run(paper.get_order("BTCTMN", first)).status.is_open

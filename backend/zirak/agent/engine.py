@@ -53,6 +53,7 @@ from zirak.models import (
 )
 
 BPS = Decimal(10000)
+EXIT_TTL_S = 45  # live/shadow: re-price an unfilled exit order after this many seconds
 
 
 @dataclass
@@ -71,6 +72,7 @@ class Position:
     tp_order_id: str | None = None
     exit_order_id: str | None = None
     exit_reason: str = ""
+    exit_placed_at: str | None = None
     proceeds: Decimal = ZERO  # Toman received from partial exits so far (fees deducted)
     sold: Decimal = ZERO
 
@@ -511,6 +513,7 @@ class Agent:
         pos.exit_reason = reason
         o = await self._place(pos.symbol, Side.SELL, left, None, f"{reason}:{pos.decision_id}")
         pos.exit_order_id = o.id if o else None
+        pos.exit_placed_at = now.isoformat() if o else None
         self.journal.decision(
             {
                 "ts": now,
@@ -779,6 +782,22 @@ class Agent:
                 self.last_price[sym] = bid
                 if bid <= pos.stop:
                     await self.exit_position(pos, "stop_loss", now)
+        # An exit (stop / time / flatten) that hasn't filled within EXIT_TTL_S is re-priced at the new touch.
+        for sym, pos in list(self.positions.items()):
+            stale = (
+                pos.exit_placed_at is not None
+                and (now - datetime.fromisoformat(pos.exit_placed_at)).total_seconds() >= EXIT_TTL_S
+            )
+            if pos.exit_order_id and stale:
+                o = await self._cancel(sym, pos.exit_order_id)
+                if o is not None:
+                    self._apply_sell(pos, o, pos.exit_order_id)
+                reason = pos.exit_reason or "exit"
+                pos.exit_order_id, pos.exit_placed_at = None, None
+                if pos.qty - pos.sold < self.markets[sym].min_qty:
+                    self._close(pos, reason, now)
+                else:
+                    await self.exit_position(pos, reason, now)
         wait = timedelta(seconds=self.cfg.execution.maker_wait_s)
         for sym, pe in list(self.pending.items()):
             if now - datetime.fromisoformat(pe.placed_at) >= wait:

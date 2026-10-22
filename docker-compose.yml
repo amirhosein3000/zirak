@@ -1,6 +1,9 @@
-# Zirak (زیرک): backend API, frontend PWA, and (optional) market-data recorder.
+# Zirak (زیرک): backend API, frontend PWA, market-data recorder and the challenge trading agent.
 #   docker compose up --build                     # api + web
 #   docker compose --profile recorder up -d       # also the market-data recorder (runs for days)
+#   GIT_COMMIT=$(git rev-parse HEAD) docker compose --profile shadow up -d --build   # agent, shadow test
+#   GIT_COMMIT=$(git rev-parse HEAD) docker compose --profile live up -d --build     # agent, REAL orders
+# The agent services restart after a crash and resume from their run directory in the volume.
 # Secrets come from .env (see .env.example); never bake them into images.
 services:
   api:
@@ -31,6 +34,29 @@ services:
       DATA_DIR: /data
     volumes: [zirak-data:/data]
     restart: unless-stopped
+
+  agent-shadow:
+    build: { context: ./backend, args: { GIT_COMMIT: "${GIT_COMMIT:-unknown}" } }
+    profiles: [shadow]
+    command: ["zirak", "agent", "shadow", "--config", "/app/config/challenge.json"]
+    env_file: [{ path: .env, required: false }]
+    environment:
+      DATA_DIR: /data
+    volumes: [zirak-data:/data]
+    restart: on-failure  # crash -> restart and resume; kill switch -> stays stopped
+
+  agent-live:
+    build: { context: ./backend, args: { GIT_COMMIT: "${GIT_COMMIT:-unknown}" } }
+    profiles: [live]
+    # Real money: also needs LIVE_TRADING=true, MAX_ORDER_TMN, MAX_ORDER_USDT, DAILY_LOSS_LIMIT_PCT and the
+    # credit account's WALLEX_API_KEY in .env. `docker compose exec agent-live zirak kill` = kill switch.
+    command: ["zirak", "agent", "live", "--config", "/app/config/challenge.json", "--i-understand-this-is-real-money"]
+    env_file: [{ path: .env, required: false }]
+    environment:
+      DATA_DIR: /data
+    volumes: [zirak-data:/data]
+    restart: on-failure  # crash -> restart and resume; kill switch -> stays stopped
+    stop_grace_period: 30s
 
 volumes:
   zirak-data:

@@ -19,10 +19,10 @@ from zirak.agent.journal import Journal, dumps
 from zirak.agent.model import MetaModel
 from zirak.agent.report import build_report, report_markdown
 from zirak.agent.verify import verify_run
-from zirak.config import REPO_ROOT, Settings, load_settings
+from zirak.config import BACKEND_ROOT, Settings, load_settings
 from zirak.models import Candle
 
-DEFAULT_CONFIG = REPO_ROOT / "backend" / "config" / "challenge.json"
+DEFAULT_CONFIG = BACKEND_ROOT / "config" / "challenge.json"
 
 
 def _cfg(args: argparse.Namespace) -> AgentConfig:
@@ -322,9 +322,7 @@ def add_parser(sub: Any) -> None:
     asub = ap.add_subparsers(dest="agent_cmd", required=True)
 
     def common(p: argparse.ArgumentParser) -> None:
-        p.add_argument(
-            "--config", help=f"agent config JSON (default {DEFAULT_CONFIG.relative_to(REPO_ROOT)})"
-        )
+        p.add_argument("--config", help="agent config JSON (default backend/config/challenge.json)")
 
     p = asub.add_parser("train", help="train the ML meta-labeler on all available history")
     common(p)

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import subprocess
 from datetime import datetime
 from decimal import Decimal
@@ -39,6 +40,9 @@ def dumps(obj: Any) -> str:
 
 
 def git_commit() -> str | None:
+    """The commit this code runs from: git when available, else ZIRAK_COMMIT (set at Docker build time)."""
+    if os.getenv("ZIRAK_COMMIT"):
+        return os.getenv("ZIRAK_COMMIT")
     try:
         out = subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, timeout=5, check=True
