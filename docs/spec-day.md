@@ -32,8 +32,8 @@ SPEC:
 
 | Likely requirement | Where it lives | Status |
 |---|---|---|
-| Connect to Wallex market data | `exchange/wallex.py`, `data/recorder` | **Blocked on docs/wallex-api** |
-| Place / cancel orders on Wallex | `exchange/wallex.py` behind `exchange/guard.py` | Blocked on docs; guard + caps done |
+| Connect to Wallex market data | `exchange/wallex.py`, `data/recorder.py` | Done (REST verified live; WS v2 flaky, v1 fallback) |
+| Place / cancel orders on Wallex | `exchange/wallex.py` behind `exchange/guard.py` | Implemented from docs, mocked tests; **never run with real money yet** |
 | Paper trading / simulation | `exchange/paper.py`, `engine/runner.py` | Done |
 | Backtesting with metrics | `backtest/engine.py`, `/backtest` page | Done |
 | Strategy from natural language (Persian) | `llm/builder.py`, `strategy/spec.py`, `/build` | Done (mock + LLM) |
@@ -81,7 +81,7 @@ answers, replay dataset with a clear story), real LLM key configured plus a back
 
 | Task | Files (no overlap) | Acceptance check | Time |
 |---|---|---|---|
-| Exchange adapter from new docs | `exchange/wallex.py`, `tests/test_wallex.py` | recorded sample saved; guard tests pass | 2–3 h |
+| Adapt to new/changed Wallex docs | `exchange/wallex.py`, `tests/test_wallex_client.py` | docs map updated; guard tests pass | 1–2 h |
 | Spec-required screen | `frontend/src/app/<new>/` | renders at 380 px, Persian, no console errors | 1–2 h |
 | Required report/log format | `backtest/report_<spec>.py` | file validates against the spec example | 1 h |
 | Demo mode + cached LLM | `llm/cache.py`, `api/main.py` | demo works with Wi-Fi off | 1–2 h |

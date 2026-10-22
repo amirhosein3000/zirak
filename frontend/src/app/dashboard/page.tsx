@@ -94,7 +94,12 @@ export default function DashboardPage() {
             }
           >
             <p className="text-xs text-muted">
-              {bot.symbol} · کندل {RESOLUTION_FA[bot.resolution] ?? bot.resolution} · حالت کاغذی روی دادهٔ بازپخش · {faNum(status.progress.done, 0)} از {faNum(status.progress.total, 0)} کندل
+              {bot.symbol} · کندل {RESOLUTION_FA[bot.resolution] ?? bot.resolution} ·{" "}
+              {status.mode === "paper-live" ? (
+                <>حالت کاغذی روی دادهٔ زندهٔ والکس · {faNum(status.progress.done, 0)} کندل جدید</>
+              ) : (
+                <>حالت کاغذی روی دادهٔ بازپخش · {faNum(status.progress.done, 0)} از {faNum(status.progress.total, 0)} کندل</>
+              )}
             </p>
             {bot.halted && !bot.killed && (
               <p className="mt-2 rounded-lg bg-accent/10 p-2 text-[13px]">مدیر ریسک خرید جدید را متوقف کرده است: {HALT_FA[bot.halt_reason] ?? bot.halt_reason}</p>

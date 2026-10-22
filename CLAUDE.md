@@ -34,12 +34,14 @@ backend/zirak/
   config.py        Settings from env (.env.example documents every variable)
   models.py        Decimal domain types: Market, Candle, OrderBook, Order, Fill, ...
   fees.py          fee + slippage maths (fee taken from the received asset — UNVERIFIED)
-  markets.py       fallback market metadata (UNVERIFIED placeholders until WallexClient.get_markets)
+  markets.py       market metadata: real precision from Wallex (markets.json); min order value is a placeholder
   indicators.py    EMA/RSI/ATR/... on pandas
   i18n.py          Persian digits, number formatting, Tehran time
   exchange/        base.py (ExchangeClient), guard.py (live-trading choke point),
-                   wallex.py (real; stub until docs), paper.py (simulated fills), replay.py (offline data)
-  data/            store.py (SQLite + CSV), source.py (pick recorded vs sample), synthetic.py
+                   wallex.py (real REST client), wallex_ws.py (WebSocket stream, v2 -> v1 fallback),
+                   paper.py (simulated fills), replay.py (offline data)
+  data/            store.py (SQLite + CSV), source.py (recorded DB vs CSV sample), recorder.py (recorder +
+                   backfill), aggregate.py (1m->5m/15m, 1h->4h), synthetic.py
   strategy/        base.py (Strategy, Signal, StrategyContext), baseline.py (4 strategies),
                    spec.py (StrategySpec DSL + RuleStrategy), registry.py
   engine/          risk.py (RiskManager), executor.py, bot.py (one strategy on one market), runner.py (paper bot + kill switch)
@@ -47,16 +49,27 @@ backend/zirak/
   llm/             provider.py (OpenAI-compatible + mock), brief.py, builder.py, explain.py
   api/main.py      FastAPI app
   cli.py           `zirak` command
-backend/tests/     pytest; fixtures/sample = SYNTHETIC candles (replace with a real recorded sample)
+backend/tests/     pytest; fixtures/wallex = REAL Wallex sample (default replay data),
+                   fixtures/sample = SYNTHETIC candles (deterministic unit tests only)
 frontend/src/      app/ (pages), components/, lib/ (api client, fa formatting)
-docs/              progress.md, spec-day.md, pitch.md, wallex-api/ (exchange docs, saved by the user)
+docs/              progress.md, spec-day.md, pitch.md,
+                   wallex-api/ (README.md = map of the exchange docs; topic digests; raw/ = original pages)
 ```
 
 ## Adapter pattern
+Read `docs/wallex-api/README.md` before touching exchange code: it maps every documented endpoint,
+lists what was verified live, where the docs contradict each other, and what is missing.
+
 Everything trades through `ExchangeClient` (`exchange/base.py`):
-- `WallexClient` — the only `is_real = True` client. Every private method calls
-  `guard.require_live()` first (cancels/reads use `risk_reducing=True` so the kill switch can still
-  cancel). No withdraw/transfer method, ever (a test scans the code for it).
+- `WallexClient` — the only `is_real = True` client (`https://api.wallex.ir`; httpx with
+  `trust_env=False` because the local proxy breaks TLS to Wallex). Public data needs no key. Every
+  private method calls `guard.require_live()` first (cancels/reads use `risk_reducing=True` so the kill
+  switch can still cancel). It only places LIMIT orders; the Executor turns live "market" signals into
+  marketable LIMIT orders capped at `LIVE_MAX_SLIPPAGE_BPS`, and the Bot cancels them after
+  `LIVE_ORDER_TTL_S`. Order fills are tracked by polling `GET /v1/account/orders/{clientOrderId}` (the
+  private WebSocket needs a browser cookie). No withdraw/transfer method, ever (a test scans the code).
+- Candles: Wallex only serves 1m / 1h / 1d reliably (`udf/history` resolutions `1`, `60`, `1D`, paged
+  backwards); 5m / 15m / 4h are aggregated locally (`data/aggregate.py`).
 - `PaperExchange(data=<any client>)` — simulated fills. Candle mode: orders placed after candle t
   fill on candle t+1 (market at open ± slippage; limits only when price trades *through*); volume
   participation cap gives partial fills. Book mode: market orders walk the book.
@@ -86,14 +99,18 @@ zirak kill                                         # KILL SWITCH (KILL file + AP
 zirak reset-kill
 zirak serve --reload                               # API on :8000
 zirak make-sample                                  # regenerate the SYNTHETIC sample
-zirak record / zirak backfill                      # BLOCKED until docs/wallex-api exists
+zirak backfill                                     # Wallex history -> data/zirak.sqlite (+ markets.json)
+zirak record [--duration 600]                      # live recorder (candles, books, trades); runs for days
+zirak export-sample                                # DB -> backend/tests/fixtures/wallex CSVs
 ```
 Frontend (from `frontend/`): `npm run dev` (http://localhost:3000; reads `NEXT_PUBLIC_API_URL`).
 
 ## Paper vs live
 - Paper (default): `LIVE_TRADING=false`. Backtests and the paper bot use `PaperExchange`.
-  `DATA_SOURCE=replay` replays recorded data (or the synthetic sample) — works offline.
-- Live: needs `WallexClient` implemented from docs, then `LIVE_TRADING=true`, `MAX_ORDER_TMN`,
+  `DATA_SOURCE=replay` replays recorded data (DB, else the real sample) — works offline.
+  `DATA_SOURCE=wallex` = paper trading on LIVE Wallex data: signals on real closed candles, paper fills
+  walk the real order book (`BotRunner._live_loop`, polls every `LIVE_POLL_S`).
+- Live money: `LIVE_TRADING=true`, `MAX_ORDER_TMN`,
   `MAX_ORDER_USDT`, `DAILY_LOSS_LIMIT_PCT`, `WALLEX_API_KEY`, and no KILL file. `/api/health`
   lists any remaining `live_blockers`. Never turn live on without the user confirming risk limits.
 
@@ -105,7 +122,10 @@ cd frontend && npm run lint && npx tsc --noEmit && npm run build
 ```
 Must-keep tests: fee/slippage maths (`test_fees.py`), RiskManager limits (`test_risk.py`), paper
 fills (`test_paper.py`), live guard / no withdraw code (`test_live_guard.py`), no look-ahead
-(`test_backtest.py`), the API demo flow including the kill switch (`test_api.py`).
+(`test_backtest.py`), the API demo flow including the kill switch (`test_api.py`), Wallex parsing and
+"no request when live is off" (`test_wallex_client.py`), recorder / data / protective limits
+(`test_recorder_and_data.py`), live-data paper runner + kill (`test_live_runner.py`).
+Tests never touch the network (httpx MockTransport).
 
 ## Conventions
 - Prefer simple code over clever abstractions. Commit and push after each milestone.

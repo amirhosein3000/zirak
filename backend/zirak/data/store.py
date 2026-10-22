@@ -84,9 +84,10 @@ class Store:
             (t.symbol, t.ts.isoformat(), str(t.price), str(t.qty), t.side.value if t.side else None)
             for t in trades
         ]
+        before = self.conn.total_changes
         with self.conn:
             self.conn.executemany("INSERT OR IGNORE INTO trades VALUES (?,?,?,?,?)", rows)
-        return len(rows)
+        return self.conn.total_changes - before  # only genuinely new trades
 
     # ---- reads -----------------------------------------------------------------------------
     def load_candles(

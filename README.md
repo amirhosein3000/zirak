@@ -22,9 +22,11 @@ Zirak is a smart, explainable, risk-first trading assistant built for the Wallex
 
 ## Status
 
-See [`docs/progress.md`](docs/progress.md). In short: the whole demo flow works offline today on a
-**synthetic** sample dataset. The live Wallex adapter and the data recorder are **blocked until the
-Wallex API docs are saved in `docs/wallex-api/`**; no exchange endpoint is ever written from memory.
+See [`docs/progress.md`](docs/progress.md). In short: the whole demo flow works offline on a **real
+Wallex sample** (bundled), or on **live Wallex prices** with `DATA_SOURCE=wallex` (paper money; fills
+walk the real order book). The recorder and history backfill run against the public Wallex API.
+Exchange code follows [`docs/wallex-api/`](docs/wallex-api/README.md) only; anything the docs don't
+confirm is marked `UNVERIFIED`.
 
 ## Quick start (Windows, from the repo root)
 
@@ -53,7 +55,9 @@ On macOS/Linux use `backend/.venv/bin/...` instead of `Scripts/...exe`.
 | Headless paper bot (replay) | `zirak paper --strategy rsi_reversion --symbol ETHTMN --speed 0.2` |
 | **Kill switch** | `zirak kill` (then `zirak reset-kill`) |
 | API server | `zirak serve --reload` |
-| Record / backfill Wallex data | `zirak record`, `zirak backfill` — **blocked until docs/wallex-api** |
+| Backfill Wallex history | `zirak backfill` (1m: 3 days, 1h: 180 days, 1d: 1000 days by default) |
+| Record live market data (days) | `zirak record` (status: `data/recorder_status.json`) |
+| Paper trading on live prices | `DATA_SOURCE=wallex zirak paper --strategy rsi_reversion --symbol BTCTMN` |
 | Docker | `docker compose up --build` (recorder: `--profile recorder`) — untested so far |
 
 Baseline strategies: `ema_cross`, `rsi_reversion`, `grid`, `dca`. Reports are saved to `data/reports/`.

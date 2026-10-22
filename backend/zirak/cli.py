@@ -5,12 +5,11 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import sys
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from zirak.config import SAMPLE_DATA_DIR, load_settings
+from zirak.config import SAMPLE_DATA_DIR, WALLEX_SAMPLE_DIR, load_settings
 
 
 def _json_arg(raw: str | None) -> dict[str, Any]:
@@ -106,16 +105,20 @@ def cmd_backtest(args: argparse.Namespace) -> int:
 def cmd_paper(args: argparse.Namespace) -> int:
     from zirak.data.source import build_replay
     from zirak.engine.runner import BotRunner
+    from zirak.exchange.wallex import WallexClient
 
     s = load_settings()
     strat, risk, symbol, resolution = _strategy_from_args(args)
     replay, label = build_replay(s)
-    runner = BotRunner(s, replay)
+    live = WallexClient(s) if s.data_source == "wallex" else None
+    if live is not None:
+        label = "LIVE Wallex"
+    runner = BotRunner(s, replay, live)
 
     async def run() -> None:
         await runner.start(strat, risk, symbol, resolution, speed_s=args.speed)
         print(
-            f"paper bot started: {strat.key} on {symbol} {resolution} ({label} replay). "
+            f"paper bot started: {strat.key} on {symbol} {resolution} ({label} data, paper money). "
             "Stop with Ctrl+C or `zirak kill`."
         )
         last = 0
@@ -169,13 +172,120 @@ def cmd_serve(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_blocked(args: argparse.Namespace) -> int:
-    print(
-        "BLOCKED: the Wallex recorder/backfill needs docs/wallex-api/ (not in the repo yet). "
-        "No endpoints are written from memory. See docs/progress.md.",
-        file=sys.stderr,
+def _symbols(args: argparse.Namespace, default: list[str]) -> list[str]:
+    return [x.strip().upper() for x in args.symbols.split(",")] if args.symbols else default
+
+
+def cmd_backfill(args: argparse.Namespace) -> int:
+    from zirak.data.recorder import backfill, save_markets
+    from zirak.data.store import Store
+    from zirak.exchange.wallex import WallexClient
+
+    s = load_settings()
+    symbols = _symbols(args, s.markets)
+    days = {"1m": args.days_1m, "1h": args.days_1h, "1d": args.days_1d}
+
+    async def run() -> None:
+        client, store = WallexClient(s), Store(s.db_path)
+        try:
+            n = await save_markets(client, s.data_dir / "markets.json")
+            print(f"saved {n} spot markets to {s.data_dir / 'markets.json'}")
+            print(f"backfilling {', '.join(symbols)} into {s.db_path}")
+            await backfill(client, store, symbols, days)
+        finally:
+            await client.close()
+            store.close()
+
+    asyncio.run(run())
+    return 0
+
+
+def cmd_record(args: argparse.Namespace) -> int:
+    import logging
+
+    from zirak.data.recorder import Recorder, save_markets
+    from zirak.data.store import Store
+    from zirak.exchange.wallex import WallexClient
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    s = load_settings()
+    symbols = _symbols(args, s.markets)
+    status_path = s.data_dir / "recorder_status.json"
+
+    async def run() -> None:
+        client, store = WallexClient(s), Store(s.db_path)
+        rec = Recorder(
+            client,
+            store,
+            symbols,
+            s.recorder_resolutions,
+            s.recorder_candle_interval_s,
+            s.recorder_book_interval_s,
+            s.recorder_trades_interval_s,
+            status_path,
+        )
+        try:
+            await save_markets(client, s.data_dir / "markets.json")
+            print(f"recording {', '.join(symbols)} ({', '.join(s.recorder_resolutions)}) into {s.db_path}")
+            print(f"status file: {status_path}. Stop with Ctrl+C.")
+            status = await rec.run(args.duration)
+            print({k: v.__dict__ for k, v in status.tasks.items()})
+        finally:
+            await client.close()
+            store.close()
+
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        print("recorder stopped")
+    return 0
+
+
+def cmd_export_sample(args: argparse.Namespace) -> int:
+    """Copy recent recorded candles (+ markets.json) from the DB into a CSV fixture directory."""
+    from datetime import timedelta
+
+    from zirak.data.store import Store, write_candles_csv
+    from zirak.models import utcnow
+
+    s = load_settings()
+    out = Path(args.out)
+    store = Store(s.db_path)
+    since = {
+        "1m": timedelta(days=args.days_1m),
+        "1h": timedelta(days=args.days_1h),
+        "1d": timedelta(days=args.days_1d),
+    }
+    try:
+        for symbol in _symbols(args, s.markets):
+            for res, delta in since.items():
+                candles = store.load_candles(symbol, res, start=utcnow() - delta)
+                if candles:
+                    write_candles_csv(out / f"{symbol}_{res}.csv", candles)
+                    print(f"  {symbol:8s} {res:3s} {len(candles):6d} candles")
+    finally:
+        store.close()
+    if (s.data_dir / "markets.json").exists():
+        snap = json.loads((s.data_dir / "markets.json").read_text(encoding="utf-8"))
+        wanted = set(_symbols(args, s.markets))
+        snap["markets"] = [m for m in snap["markets"] if m["symbol"] in wanted]
+        (out / "markets.json").write_text(json.dumps(snap, ensure_ascii=False, indent=1), encoding="utf-8")
+    (out / "README.md").write_text(
+        "\n".join(
+            [
+                "# Real Wallex sample data",
+                "",
+                "Recorded from the public Wallex API with `zirak backfill` and exported with",
+                f"`zirak export-sample` on {utcnow():%Y-%m-%d} (UTC). Candles: 1m, 1h, 1d;",
+                "15m and 4h are derived on load. `markets.json` holds the real price/amount precision.",
+                "",
+            ]
+        ),
+        encoding="utf-8",
     )
-    return 2
+    print(f"sample written to {out}")
+    return 0
 
 
 def cmd_data_stats(args: argparse.Namespace) -> int:
@@ -227,8 +337,25 @@ def main(argv: list[str] | None = None) -> int:
     sp.set_defaults(fn=cmd_serve)
 
     sub.add_parser("data-stats", help="list available market data").set_defaults(fn=cmd_data_stats)
-    sub.add_parser("record", help="(blocked) record live Wallex data").set_defaults(fn=cmd_blocked)
-    sub.add_parser("backfill", help="(blocked) backfill Wallex history").set_defaults(fn=cmd_blocked)
+    sp = sub.add_parser("backfill", help="download Wallex candle history into the DB")
+    sp.add_argument("--symbols", help="comma list; default MARKETS")
+    sp.add_argument("--days-1m", type=float, default=3)
+    sp.add_argument("--days-1h", type=float, default=180)
+    sp.add_argument("--days-1d", type=float, default=1000)
+    sp.set_defaults(fn=cmd_backfill)
+
+    sp = sub.add_parser("record", help="record live Wallex candles, order books and trades (runs for days)")
+    sp.add_argument("--symbols", help="comma list; default MARKETS")
+    sp.add_argument("--duration", type=float, help="stop after N seconds (default: run forever)")
+    sp.set_defaults(fn=cmd_record)
+
+    sp = sub.add_parser("export-sample", help="export recent recorded candles to a CSV fixture dir")
+    sp.add_argument("--out", default=str(WALLEX_SAMPLE_DIR))
+    sp.add_argument("--symbols", help="comma list; default MARKETS")
+    sp.add_argument("--days-1m", type=float, default=1)
+    sp.add_argument("--days-1h", type=float, default=60)
+    sp.add_argument("--days-1d", type=float, default=400)
+    sp.set_defaults(fn=cmd_export_sample)
 
     args = p.parse_args(argv)
     code: int = args.fn(args)

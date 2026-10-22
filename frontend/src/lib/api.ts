@@ -43,7 +43,7 @@ export type Health = {
   ok: boolean;
   version: string;
   data_source: string;
-  data: "sample" | "recorded";
+  data: "synthetic" | "recorded" | "live";
   llm: string;
   live_trading: boolean;
   live_blockers: string[];

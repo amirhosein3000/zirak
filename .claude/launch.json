@@ -8,6 +8,13 @@
       "port": 8000
     },
     {
+      "name": "api-live",
+      "runtimeExecutable": "backend/.venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "zirak.api.main:app", "--app-dir", "backend", "--port", "8000"],
+      "env": { "DATA_SOURCE": "wallex", "LIVE_POLL_S": "3" },
+      "port": 8000
+    },
+    {
       "name": "web",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "frontend", "run", "dev"],

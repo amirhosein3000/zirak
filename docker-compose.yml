@@ -1,6 +1,6 @@
 # Zirak (زیرک): backend API, frontend PWA, and (optional) market-data recorder.
 #   docker compose up --build                     # api + web
-#   docker compose --profile recorder up -d       # also the recorder (BLOCKED until docs/wallex-api exists)
+#   docker compose --profile recorder up -d       # also the market-data recorder (runs for days)
 # Secrets come from .env (see .env.example); never bake them into images.
 services:
   api:

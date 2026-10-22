@@ -60,7 +60,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         <p className="mt-2 rounded-lg bg-accent/10 px-3 py-1.5 text-[11.5px] leading-5 text-text/80">
           ⚠️ این ابزار آموزشی و آزمایشی است و <b>توصیهٔ مالی نیست</b>. تصمیم و مسئولیت هر معامله با خود شماست.
-          {health?.data === "sample" && <> داده‌ها فعلاً <b>شبیه‌سازی‌شده</b> هستند.</>}
+          {health?.data === "synthetic" && <> داده‌ها فعلاً <b>شبیه‌سازی‌شده</b> هستند.</>}
+          {health?.data === "live" && <> قیمت‌ها <b>زنده</b> از والکس خوانده می‌شوند؛ معاملات همچنان کاغذی است.</>}
         </p>
       </header>
 

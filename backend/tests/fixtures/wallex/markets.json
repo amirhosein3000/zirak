@@ -1,0 +1,60 @@
+{
+ "saved_at": "2026-10-22T08:25:32.197860+00:00",
+ "markets": [
+  {
+   "symbol": "BTCTMN",
+   "base_asset": "BTC",
+   "quote_asset": "TMN",
+   "amount_precision": 8,
+   "price_precision": 0,
+   "is_spot": true,
+   "fa_base_asset": "بیت کوین",
+   "fa_quote_asset": "تومان",
+   "is_zero_fee": false
+  },
+  {
+   "symbol": "ETHTMN",
+   "base_asset": "ETH",
+   "quote_asset": "TMN",
+   "amount_precision": 5,
+   "price_precision": 0,
+   "is_spot": true,
+   "fa_base_asset": "اتریوم",
+   "fa_quote_asset": "تومان",
+   "is_zero_fee": false
+  },
+  {
+   "symbol": "USDTTMN",
+   "base_asset": "USDT",
+   "quote_asset": "TMN",
+   "amount_precision": 2,
+   "price_precision": 0,
+   "is_spot": true,
+   "fa_base_asset": "تتر",
+   "fa_quote_asset": "تومان",
+   "is_zero_fee": false
+  },
+  {
+   "symbol": "BTCUSDT",
+   "base_asset": "BTC",
+   "quote_asset": "USDT",
+   "amount_precision": 8,
+   "price_precision": 2,
+   "is_spot": true,
+   "fa_base_asset": "بیت کوین",
+   "fa_quote_asset": "تتر",
+   "is_zero_fee": false
+  },
+  {
+   "symbol": "ETHUSDT",
+   "base_asset": "ETH",
+   "quote_asset": "USDT",
+   "amount_precision": 5,
+   "price_precision": 2,
+   "is_spot": true,
+   "fa_base_asset": "اتریوم",
+   "fa_quote_asset": "تتر",
+   "is_zero_fee": false
+  }
+ ]
+}

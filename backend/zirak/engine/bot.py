@@ -124,6 +124,8 @@ class Bot:
         settings: Settings | None = None,
         clock: SimClock | None = None,
         window: int = 300,
+        fill_on_candle: bool = True,
+        order_ttl_s: float | None = None,
     ) -> None:
         self.strategy = strategy
         self.risk = risk
@@ -142,13 +144,17 @@ class Bot:
         self._open: dict[str, LogEntry] = {}  # order id -> log entry, for orders still being filled
         self.stopped = False
         self.last_price: Decimal | None = None
+        #: candle-mode paper fills (backtests/replays). Live paper trading fills on order-book snapshots.
+        self.fill_on_candle = fill_on_candle
+        #: cancel orders still open after this many seconds (live: marketable limits must not linger)
+        self.order_ttl_s = order_ttl_s
 
     # ---- main step ---------------------------------------------------------------------------
     async def on_candle(self, candle: Candle) -> None:
         if self.stopped:
             return
         now = candle.ts + resolution_delta(self.resolution)
-        if isinstance(self.exchange, PaperExchange):
+        if self.fill_on_candle and isinstance(self.exchange, PaperExchange):
             self.exchange.on_candle(self.symbol, candle)
         if self.clock is not None:
             self.clock.now = now
@@ -241,8 +247,15 @@ class Bot:
 
     # ---- fills -> ledger -----------------------------------------------------------------------
     async def sync_orders(self) -> None:
+        now = self.clock() if self.clock is not None else utcnow()
         for order_id, entry in list(self._open.items()):
             order = await self.exchange.get_order(self.symbol, order_id)
+            if (
+                self.order_ttl_s is not None
+                and order.status.is_open
+                and (now - order.created_at).total_seconds() > self.order_ttl_s
+            ):
+                order = await self.exchange.cancel_order(self.symbol, order_id)
             self._track(order, entry)
 
     def _track(self, order: Order, entry: LogEntry) -> None:

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
-from collections.abc import AsyncIterator
+import time
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from decimal import Decimal
 from typing import Any
 
+import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ValidationError
@@ -19,12 +21,14 @@ from zirak.data.source import build_replay, load_series
 from zirak.engine.risk import RiskConfig
 from zirak.engine.runner import BotRunner, RunnerError
 from zirak.exchange.guard import live_blockers
+from zirak.exchange.wallex import WallexAPIError, WallexClient
 from zirak.fees import FeeModel
 from zirak.llm.brief import compute_facts, market_brief
 from zirak.llm.builder import build_strategy
 from zirak.llm.explain import explain_entry
 from zirak.llm.provider import build_llm
 from zirak.markets import ASSET_NAMES_FA, market_name_fa
+from zirak.models import RESOLUTION_SECONDS, Candle, Market, OrderBook, resolution_delta, utcnow
 from zirak.strategy.base import Strategy
 from zirak.strategy.registry import build_strategy as make_strategy
 from zirak.strategy.registry import catalog
@@ -54,10 +58,58 @@ class ExplainIn(BaseModel):
 class State:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self.replay, self.data_label = build_replay(settings)
-        self.runner = BotRunner(settings, self.replay)
+        self.replay, self.replay_label = build_replay(settings)
+        self.data_label = self.replay_label
+        #: live public market data from Wallex when DATA_SOURCE=wallex (paper trading stays paper)
+        self.live = WallexClient(settings) if settings.data_source == "wallex" else None
+        if self.live is not None:
+            self.data_label = "live"
+        self.runner = BotRunner(settings, self.replay, self.live)
         self.llm = build_llm(settings)
         self.reports_dir = settings.data_dir / "reports"
+        self._cache: dict[str, tuple[float, Any]] = {}
+
+    async def _cached(self, key: str, ttl: float, fn: Callable[[], Awaitable[Any]]) -> Any:
+        hit = self._cache.get(key)
+        if hit and time.monotonic() - hit[0] < ttl:
+            return hit[1]
+        try:
+            value = await fn()
+        except (httpx.HTTPError, WallexAPIError) as e:
+            raise HTTPException(
+                503, "اتصال به داده‌های زندهٔ والکس برقرار نشد؛ کمی بعد دوباره تلاش کنید."
+            ) from e
+        self._cache[key] = (time.monotonic(), value)
+        return value
+
+    async def market(self, symbol: str) -> Market | None:
+        if self.live is None:
+            return self.replay.markets.get(symbol)
+        live = self.live
+        markets: dict[str, Market] = await self._cached("markets", 3600, lambda: _as_dict(live.get_markets()))
+        return markets.get(symbol)
+
+    async def candles(self, symbol: str, resolution: str, limit: int) -> list[Candle]:
+        if self.live is None:
+            return self.replay.visible(symbol, resolution)[-limit:]
+        live, step = self.live, resolution_delta(resolution)
+        series: list[Candle] = await self._cached(
+            f"c:{symbol}:{resolution}:{limit}",
+            20,
+            lambda: live.get_candles(symbol, resolution, utcnow() - step * int(limit * 1.3 + 5), utcnow()),
+        )
+        return series[-limit:]
+
+    async def book(self, symbol: str) -> OrderBook:
+        if self.live is None:
+            return await self.replay.get_order_book(symbol)
+        live = self.live
+        book: OrderBook = await self._cached(f"b:{symbol}", 5, lambda: live.get_order_book(symbol))
+        return book
+
+
+async def _as_dict(coro: Awaitable[list[Market]]) -> dict[str, Market]:
+    return {m.symbol: m for m in await coro}
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -68,6 +120,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         yield
         await state.runner.stop()
+        if state.live is not None:
+            await state.live.close()
 
     app = FastAPI(title="Zirak API", version=__version__, lifespan=lifespan)
     app.add_middleware(
@@ -96,12 +150,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/markets")
     async def markets() -> list[dict[str, Any]]:
         out = []
-        for symbol, res, count in state.replay.available():
-            if res != "1h" or symbol not in settings.markets:
+        for symbol in settings.markets:
+            m = await state.market(symbol)
+            series = await state.candles(symbol, "1h", 25)
+            if m is None or not series:
                 continue
-            m = state.replay.markets[symbol]
-            vis = state.replay.visible(symbol, "1h")
-            last, prev = (vis[-1].close, vis[-25].close) if len(vis) > 25 else (None, None)
+            last, prev = series[-1].close, series[0].close if len(series) >= 25 else None
             out.append(
                 {
                     "symbol": symbol,
@@ -110,9 +164,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "name_fa": market_name_fa(m),
                     "base_fa": ASSET_NAMES_FA.get(m.base, m.base),
                     "quote_fa": ASSET_NAMES_FA.get(m.quote, m.quote),
-                    "price": str(last) if last else None,
-                    "change_24h_pct": float((last / prev - 1) * 100) if last and prev else None,
-                    "candles": count,
+                    "price": str(last),
+                    "change_24h_pct": float((last / prev - 1) * 100) if prev else None,
+                    "candles": len(state.replay.series(symbol, "1h")),
                     "verified": m.verified,
                 }
             )
@@ -120,26 +174,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/markets/{symbol}/candles")
     async def candles(symbol: str, resolution: str = "1h", limit: int = 200) -> list[dict[str, Any]]:
-        vis = state.replay.visible(symbol, resolution)
-        if not vis:
+        if resolution not in RESOLUTION_SECONDS:
+            raise HTTPException(422, f"unknown resolution {resolution}")
+        series = await state.candles(symbol, resolution, min(limit, 1000))
+        if not series:
             raise HTTPException(404, f"no {resolution} data for {symbol}")
-        return [c.to_dict() for c in vis[-min(limit, 1000) :]]
+        return [c.to_dict() for c in series]
 
     @app.get("/api/markets/{symbol}/brief")
     async def brief(symbol: str) -> dict[str, Any]:
-        market = state.replay.markets.get(symbol)
-        vis = state.replay.visible(symbol, "1h")
-        if market is None or not vis:
+        market = await state.market(symbol)
+        series = await state.candles(symbol, "1h", 300)
+        if market is None or not series:
             raise HTTPException(404, f"no data for {symbol}")
-        book = await state.replay.get_order_book(symbol)
-        facts = compute_facts(market, vis, book)
+        book = await state.book(symbol)
+        facts = compute_facts(market, series, book)
         text, source = await market_brief(state.llm, market, facts)
         return {
             "symbol": symbol,
             "brief_fa": text,
             "source": source,
             "facts": facts.to_dict(),
-            "as_of": vis[-1].ts.isoformat(),
+            "as_of": series[-1].ts.isoformat(),
             "data": state.data_label,
         }
 
@@ -198,7 +254,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             slippage_bps=settings.slippage_bps,
             initial_quote=initial,
             participation=settings.fill_participation,
-            meta={"data": state.data_label, "spec": body.spec},
+            meta={"data": state.replay_label, "spec": body.spec},
         )
         report = await run_backtest_async(series, setup)
         save_report(report, state.reports_dir)

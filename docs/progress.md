@@ -1,58 +1,59 @@
 # Progress
 
-_Last updated: 2026-10-21 (end of kickoff session)_
+_Last updated: 2026-10-22_
 
 ## Done
 - [x] Name: **Zirak (زیرک)**. Private repo github.com/amirhosein3000/zirak (renamed from Tarazoo on 2026-10-21).
-- [x] CLAUDE.md, `.env.example`
+- [x] CLAUDE.md, `.env.example` (every variable documented)
 - [x] Core: Decimal models, fee/slippage maths, market precision/minimum checks
-- [x] `ExchangeClient` interface, `PaperExchange`, `ReplayExchange`, live guard + hard caps
+- [x] `ExchangeClient` interface, `PaperExchange` (candle + book fill models), `ReplayExchange`, live guard + hard caps
 - [x] Strategy interface + 4 baselines (EMA cross, RSI reversion, grid, DCA) + `StrategySpec` rules DSL
-- [x] RiskManager (sizing, max exposure, per-order cap, SL/TP, daily loss limit, cooldown), Executor, Bot ledger
-- [x] Backtester (same Bot path as paper), metrics vs buy-and-hold, JSON reports
+- [x] RiskManager, Executor, Bot ledger; backtester on the same path; metrics vs buy-and-hold
 - [x] LLM layer (OpenAI-compatible + mock): Persian brief, Persian → strategy builder, trade explanations
-- [x] FastAPI app, `zirak` CLI, paper bot runner, kill switch (API + CLI + KILL file)
-- [x] Frontend PWA (Next.js 16, RTL, Vazirmatn, Jalali/Tehran time): market brief → Persian builder →
-      backtest report (equity vs buy-and-hold, drawdown) → paper dashboard → «چرا؟» explanations → kill switch.
-      Walked end to end in the browser at 375 px against the live API (2026-10-21).
-- [x] Kill switch verified three ways: dashboard button, `POST /api/kill`, and `zirak kill` from another process
-- [x] Dockerfiles + docker-compose.yml (api, web, recorder profile) — **untested: Docker isn't installed on this machine**
-- [x] docs/spec-day.md, docs/pitch.md (Persian), README
-- [x] Quality gates green: ruff, mypy --strict, 61 pytest tests, eslint, tsc, next build
+- [x] FastAPI app, `zirak` CLI, kill switch (UI button, `POST /api/kill`, `zirak kill`, KILL file)
+- [x] Frontend PWA (Next.js 16, RTL, Vazirmatn, Jalali/Tehran time), full demo flow
+- [x] **Wallex API docs organized** (2026-10-22): `docs/wallex-api/README.md` maps all 46 saved pages,
+      topic digests, raw pages renamed under `raw/`, 7 redundant files deleted, conflicts + gaps listed
+- [x] **WallexClient** from the docs: markets (real precision), candles (1m/1h/1d native + paging; 5m/15m/4h
+      aggregated), depth, trades, fair prices, balances, fees, place/cancel/get/open orders (guarded)
+- [x] WebSocket stream: Centrifugo v2 with backoff, falls back to v1 (v2 handshake answered 503 often)
+- [x] **Recorder + backfill** proven live: `zirak backfill` (180 d of 1h, 1000 d of 1d, 3 d of 1m for 5 markets
+      in ~19 s) and `zirak record --duration 75` (0 errors: candles, order books, trades)
+- [x] **Real sample dataset** in `backend/tests/fixtures/wallex` (1m/1h/1d + markets.json) is now the default
+      replay data; the synthetic sample remains only for deterministic tests
+- [x] **Paper trading on live Wallex data** (`DATA_SOURCE=wallex`): verified via CLI (USDTTMN 1m) and API
+      (ETHUSDT 1m): fills at the real ask, fee in the received asset, kill switch cancels and stops
+- [x] Live-order safety: marketable LIMIT with `LIVE_MAX_SLIPPAGE_BPS` cap, unfilled orders canceled after `LIVE_ORDER_TTL_S`
+- [x] Quality gates green: ruff, mypy --strict (54 files), **84 pytest tests** (network-free), eslint, tsc
 
 ## Next
-1. **Unblock the exchange:** save docs into `docs/wallex-api/`, then implement `WallexClient` (public data
-   first), the recorder (`zirak record`: candles at several resolutions, order-book snapshots, trades →
-   SQLite) and the history backfill. Prove it with a short live run and replace the synthetic sample.
-2. Live-data paper runner (`DATA_SOURCE=wallex`): PaperExchange in book mode on the real order book.
-3. Prompt 1 from the prompts file (verify and harden), then prompt 2 (extra modules) and prompt 3 (strategy research).
+1. Prompt 1 from the prompts file: verify and harden (money maths audit, stale-data detection, resilience).
+2. Leave `zirak record` running for days (or on a server in Iran) so backtests use fresh real data.
+3. With a real API key (trade permission only): read `/v1/account/fee` and replace the fee placeholders,
+   then a supervised **tiny** live test (one order far from the market, then cancel) to confirm the
+   UNVERIFIED order fields below. Never without the user confirming the risk limits.
+4. Prompt 2 (extra modules), prompt 3 (strategy research on the real data), pitch polish.
 
-## BLOCKED: Wallex API docs
-`docs/wallex-api/` does not exist yet. Until it does:
-- `WallexClient` (exchange/wallex.py) is a guarded stub: every method raises `NotImplementedError`.
-- The recorder (`zirak record`) and history backfill (`zirak backfill`) exit with "BLOCKED".
-- `DATA_SOURCE=wallex` is refused; everything runs on `DATA_SOURCE=replay`.
-- The sample dataset in `backend/tests/fixtures/sample/` is **SYNTHETIC** (seeded random walk with a
-  crash), not real data. Replace it with a short real recording once the recorder exists.
+## UNVERIFIED (docs silent or ambiguous; see docs/wallex-api/README.md)
+- Spot **minimum order size / min notional**: not in the docs (placeholders: 100,000 TMN, 5 USDT).
+- **Fees**: placeholders `FEE_TAKER_PCT=0.25`, `FEE_MAKER_PCT=0.20`. `GET /v1/account/fee` needs a key; the rate
+  unit (fraction vs percent) is unconfirmed.
+- Fee convention: fee taken from the received asset. The WS `tradeDetails` example (buy USDTTMN → fee in USDT)
+  agrees, but it's not stated as a rule.
+- Order **status values** beyond NEW / FILLED / CANCELED; whether `price` is required/ignored for MARKET orders
+  (Zirak never sends MARKET); `openOrders` response shape (doc shows a swagger placeholder map).
+- Balances: whether `value` includes `locked` (Zirak assumes value = total).
+- REST rate-limit window (header `x-ratelimit-limit: 600` seen on `/v1/trades`).
+- WebSocket v2 handshake reliability (HTTP 503 on quick reconnects) and whether an `Origin` header matters.
 
-To unblock: save the developers.wallex.ir pages (REST market data, candles/history, order book,
-trades, account/balances, orders, WebSocket channels, rate limits, fees) as markdown or text in
-`docs/wallex-api/`, then ask Claude to implement `WallexClient` + recorder from them.
-
-## UNVERIFIED (must be checked against the docs)
-- Fee rates (`FEE_TAKER_PCT=0.25`, `FEE_MAKER_PCT=0.20`) are placeholders.
-- Fee convention (fee taken from the received asset) — `fees.py`.
-- Market precision / min order sizes in `markets.py` are placeholders (`Market.verified=False`).
-- Candle resolution names and the history endpoint's paging limits.
-- The `x-api-key` header requirement for public endpoints.
+## Missing from the saved docs
+Spot swagger/service pages (order endpoints' exact schemas and errors), the base-services swagger file,
+a page for `GET /v1/all-fairPrice`, spot minimum order sizes, and a public fee table.
 
 ## Open issues / notes
-- The recorder service in docker-compose restarts in a loop until `zirak record` is implemented (it's behind
-  the `recorder` profile, so it's off by default).
-- The browser preview needed CORS for port 3001; the API accepts any `localhost:<port>` origin plus `CORS_ORIGINS`.
+- The machine's HTTPS proxy (127.0.0.1:10808) breaks TLS to Wallex; Wallex calls bypass proxies
+  (`WALLEX_USE_SYSTEM_PROXY=false`). On a server abroad Wallex may be unreachable; run the recorder in Iran.
+- `timeout -s INT` doesn't stop `zirak paper` on Windows; use `zirak kill` (KILL file) or Ctrl+C.
 - `liara-hackathon-prompts.md` in the repo root is the user's file; it isn't tracked and nobody has touched it.
-- Backtest results on the synthetic sample are mostly negative vs buy-and-hold. That's expected and
-  honest; real strategy research (prompt 3) needs real recorded data.
-- Python 3.12 comes from a uv-managed interpreter
-  (`C:\Users\Lotus\AppData\Roaming\uv\python\cpython-3.12.15-windows-x86_64-none\python.exe`);
-  the system default is 3.14.
+- Docker files are untested here (Docker isn't installed).
+- Python 3.12 comes from a uv-managed interpreter; the system default is 3.14.

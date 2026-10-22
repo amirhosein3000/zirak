@@ -70,7 +70,7 @@ function BacktestView() {
     <>
       <Card
         title={report.strategy.title_fa || report.strategy.key}
-        action={<Badge tone={report.meta.data === "sample" ? "accent" : "primary"}>{report.meta.data === "sample" ? "دادهٔ شبیه‌سازی‌شده" : "دادهٔ واقعی ضبط‌شده"}</Badge>}
+        action={<Badge tone={report.meta.data === "synthetic" ? "accent" : "primary"}>{report.meta.data === "synthetic" ? "دادهٔ شبیه‌سازی‌شده" : "دادهٔ واقعی والکس"}</Badge>}
       >
         <p className="text-xs text-muted">
           {report.symbol} · کندل {RESOLUTION_FA[report.resolution] ?? report.resolution} · {tehranDate(report.period.start)} تا {tehranDate(report.period.end)} ·{" "}
