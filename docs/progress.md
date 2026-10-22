@@ -29,6 +29,11 @@ Deliverables: 5-min demo video, GitHub + one md document, decision logs.
       image built and smoke-tested here (backtest + verify inside the container, commit recorded)
 - [x] `/agent` page: results, equity, AI decisions, postures, positions, decision feed
 
+- [x] **Liara deployment** (team account): GitHub Action `Deploy to Liara` (manual, quality gates first),
+      `scripts/deploy-liara.sh`, `liara.json` for API (+ persistent disk) and web, `start.sh` runs the API plus
+      the supervised agent in one container (bootstrap backfill + train on first start). Image tested here.
+      Not deployed yet: the tokens weren't available to this session and Liara/Wallex aren't reachable from it.
+
 ### Honest numbers so far
 Bundled real sample (1h, 60 days, placeholder fees 0.25/0.20 %), last 30 days walk-forward: +0.18 %
 mark-to-market, −0.58 % realised, max drawdown 1.4 %, 12 trades. Gross of fees mean reversion and

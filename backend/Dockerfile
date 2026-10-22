@@ -4,6 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 DATA_DIR=/data
 COPY pyproject.toml ./
 COPY zirak ./zirak
 COPY config ./config
+COPY start.sh ./start.sh
 COPY tests/fixtures/wallex ./tests/fixtures/wallex
 RUN pip install --no-cache-dir .
 VOLUME ["/data"]
@@ -13,4 +14,5 @@ ENV REPLAY_DIR=/app/tests/fixtures/wallex
 # The commit this image was built from, recorded in every run's manifest (the code that traded).
 ARG GIT_COMMIT=unknown
 ENV ZIRAK_COMMIT=$GIT_COMMIT
-CMD ["uvicorn", "zirak.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# The API, plus the trading agent when ZIRAK_AGENT=shadow|live (see start.sh).
+CMD ["sh", "/app/start.sh"]

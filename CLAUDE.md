@@ -100,6 +100,10 @@ decision log, postures, orders with latency, trades, equity, state, manifest wit
 `zirak agent verify` recomputes every logged AI verdict. Rules: the AI never places orders or bypasses
 caps; only Toman markets are tradable; keep `test_agent.py` green (causality, determinism, guard, flatten,
 restart). Credit-account calls are read-only (docs/wallex-api/credit-account.md).
+Deploy: Liara (servers in Iran) via `.github/workflows/deploy-liara.yml` (manual, tests first; secrets
+`LIARA_API_TOKEN`, `LIARA_TEAM_ID`) or `scripts/deploy-liara.sh`; `backend/liara.json` (+ disk at /data),
+`frontend/liara.json`. The backend container runs `start.sh`: API + agent (`ZIRAK_AGENT=shadow|live`,
+supervised, `ZIRAK_BOOTSTRAP` backfills + trains once). Trading keys live only in Liara app variables. See DEPLOY.md.
 
 ## Modules (optional, `MODULES` env flag; default all)
 Each module is one backend file in `zirak/modules/` exposing `router` (mounted at `/api/m/<name>`),
