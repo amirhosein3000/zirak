@@ -399,3 +399,13 @@ def test_credit_calls_are_guarded_without_a_key(settings: Settings) -> None:
         run(c.get_balances_detail())
     with pytest.raises(LiveTradingDisabled):
         run(c.get_active_package())
+
+
+def test_fees_skip_the_default_entry(tmp_path: Path) -> None:
+    """Real shape (2026-10-23): per-market rates as fraction strings plus a non-market `"default": []`."""
+    fee = {
+        "USDTTMN": {"makerFeeRate": "0.00250000", "takerFeeRate": "0.00300000", "recent_days_sum": 0},
+        "default": [],
+    }
+    out = run(client(live(tmp_path), Fake({"GET /v1/account/fee": ok(fee)})).get_fees())
+    assert out == {"USDTTMN": (D("0.0025"), D("0.003"))}

@@ -67,8 +67,10 @@ class Settings:
     markets: list[str] = field(default_factory=lambda: ["USDTTMN", "BTCTMN", "BTCUSDT", "ETHTMN", "ETHUSDT"])
 
     # --- paper trading simulation -------------------------------------------------------------
-    fee_taker_pct: Decimal = Decimal("0.25")  # UNVERIFIED placeholder: set from your Wallex fee tier
-    fee_maker_pct: Decimal = Decimal("0.20")  # UNVERIFIED placeholder
+    # Read from the challenge account on 2026-10-23 (GET /v1/account/fee): every Toman market 0.25 % maker,
+    # 0.30 % taker (USDT markets are cheaper: 0.10 / 0.13). Live runs read the account's own rates.
+    fee_taker_pct: Decimal = Decimal("0.30")
+    fee_maker_pct: Decimal = Decimal("0.25")
     slippage_bps: Decimal = Decimal("5")
     paper_start_tmn: Decimal = Decimal("100000000")
     paper_start_usdt: Decimal = Decimal("1000")
@@ -145,8 +147,8 @@ def load_settings(env_file: str | Path | None = None) -> Settings:
         wallex_prop_package_id=os.getenv("WALLEX_PROP_PACKAGE_ID") or None,
         data_source=_str("DATA_SOURCE", "replay"),
         markets=_list("MARKETS", "USDTTMN,BTCTMN,BTCUSDT,ETHTMN,ETHUSDT"),
-        fee_taker_pct=_dec("FEE_TAKER_PCT", "0.25") or Decimal("0.25"),
-        fee_maker_pct=_dec("FEE_MAKER_PCT", "0.20") or Decimal("0.20"),
+        fee_taker_pct=_dec("FEE_TAKER_PCT", "0.30") or Decimal("0.30"),
+        fee_maker_pct=_dec("FEE_MAKER_PCT", "0.25") or Decimal("0.25"),
         slippage_bps=_dec("SLIPPAGE_BPS", "5") or Decimal("5"),
         paper_start_tmn=_dec("PAPER_START_TMN", "100000000") or Decimal("100000000"),
         paper_start_usdt=_dec("PAPER_START_USDT", "1000") or Decimal("1000"),

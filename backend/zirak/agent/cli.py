@@ -9,6 +9,7 @@ import argparse
 import asyncio
 import csv
 import json
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -215,8 +216,10 @@ def cmd_probe(args: argparse.Namespace) -> int:
     """Day-0 check on the real account (needs every live condition): read balances, plan limits and fees,
     place ONE tiny LIMIT buy far below the market, read it back, list open orders, cancel it, read again.
     Prints the raw shapes so the UNVERIFIED fields in docs/wallex-api can be confirmed."""
+    import httpx
+
     from zirak.exchange.guard import live_blockers
-    from zirak.exchange.wallex import WallexClient
+    from zirak.exchange.wallex import WallexAPIError, WallexClient
     from zirak.models import OrderRequest, OrderType, Side
 
     s = load_settings()
@@ -231,11 +234,20 @@ def cmd_probe(args: argparse.Namespace) -> int:
 
     async def go() -> None:
         try:
-            print("balances:", await c.get_balances())
+            print("balances:", {k: v for k, v in (await c.get_balances()).items() if v.total})
+
+            async def optional(label: str, call: Callable[[], Awaitable[object]]) -> None:
+                # Read-only extras: report a failure and keep going to the order check.
+                try:
+                    print(f"{label}:", await call())
+                except (httpx.HTTPError, WallexAPIError) as e:
+                    print(f"{label}: FAILED ({e})")
+
             if s.wallex_credit_account:
-                print("active plan:", await c.get_active_package())
+                await optional("active plan", c.get_active_package)
             if s.wallex_prop_package_id:
-                print("unavailable markets:", await c.get_unavailable_markets(s.wallex_prop_package_id))
+                pid = s.wallex_prop_package_id
+                await optional("unavailable markets", lambda: c.get_unavailable_markets(pid))
             fees = await c.get_fees()
             print("fees:", {k: v for k, v in fees.items() if k == args.symbol})
             markets = {m.symbol: m for m in await c.get_markets()}
@@ -261,7 +273,7 @@ def cmd_probe(args: argparse.Namespace) -> int:
 def cmd_flatten(args: argparse.Namespace) -> int:
     """Sell every coin of the configured markets back to Toman (marketable limits, capped), then stop."""
     from zirak.agent.engine import Agent, Position
-    from zirak.agent.labeling import Costs
+    from zirak.agent.runner import costs_from
     from zirak.exchange.guard import live_blockers
     from zirak.exchange.wallex import WallexClient
     from zirak.models import utcnow
@@ -277,9 +289,7 @@ def cmd_flatten(args: argparse.Namespace) -> int:
         try:
             markets = {m.symbol: m for m in await c.get_markets()}
             run_dir = s.data_dir / "runs" / f"{cfg.name}-flatten"
-            agent = Agent(
-                cfg, c, markets, MetaModel(), Journal(run_dir), Costs(0.0025, 0.002, 0.0005), utcnow, s
-            )
+            agent = Agent(cfg, c, markets, MetaModel(), Journal(run_dir), costs_from(s), utcnow, s)
             bal = await c.get_balances()
             await c.cancel_all()
             for sym in cfg.markets:

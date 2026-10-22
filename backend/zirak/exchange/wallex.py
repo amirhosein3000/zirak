@@ -320,10 +320,15 @@ class WallexClient(ExchangeClient):
         return [str(m).strip() for m in (data.get("result") or {}).get("unavailableMarkets") or []]
 
     async def get_fees(self) -> dict[str, tuple[Decimal, Decimal]]:
-        """symbol -> (maker rate, taker rate). Rates as returned (fraction vs percent UNVERIFIED)."""
+        """symbol -> (maker rate, taker rate) as fractions (checked live 2026-10-23: Toman markets
+        "0.00250000" / "0.00300000"). The result also holds a non-market `"default": []` entry, skipped."""
         require_live(self.settings, risk_reducing=True)
         data = await self._request("GET", "/v1/account/fee")
-        return {s: (D(v.get("makerFeeRate")), D(v.get("takerFeeRate"))) for s, v in data["result"].items()}
+        return {
+            s: (D(v.get("makerFeeRate")), D(v.get("takerFeeRate")))
+            for s, v in data["result"].items()
+            if isinstance(v, dict) and v.get("makerFeeRate") is not None
+        }
 
     async def place_order(self, req: OrderRequest) -> Order:
         require_live(self.settings)
