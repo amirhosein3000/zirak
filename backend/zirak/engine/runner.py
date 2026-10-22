@@ -25,12 +25,18 @@ from zirak.exchange.paper import PaperExchange
 from zirak.exchange.replay import ReplayExchange
 from zirak.exchange.wallex import WallexAPIError, WallexClient
 from zirak.fees import FeeModel
-from zirak.models import ZERO, Market, Order, resolution_delta, utcnow
+from zirak.models import ZERO, Market, Order, OrderBook, resolution_delta, utcnow
 from zirak.strategy.base import Strategy
 
 
 class RunnerError(RuntimeError):
     pass
+
+
+def book_is_sane(book: OrderBook) -> bool:
+    """A usable snapshot has both sides and is not crossed (best bid below best ask)."""
+    bid, ask = book.best_bid, book.best_ask
+    return bid is not None and ask is not None and 0 < bid < ask
 
 
 class BotRunner:
@@ -195,6 +201,7 @@ class BotRunner:
                 settings=self.settings,
                 fill_on_candle=False,
                 order_ttl_s=self.settings.live_order_ttl_s,
+                max_data_age_s=self.settings.stale_data_s,
             )
         else:
             quote_start = initial_quote or quote_start_for.get(market.quote, ZERO)
@@ -208,7 +215,14 @@ class BotRunner:
             )
             self.paper.set_last_price(symbol, history[-1].close)
             self.bot = Bot(
-                strategy, rm, self.paper, market, resolution, settings=self.settings, fill_on_candle=False
+                strategy,
+                rm,
+                self.paper,
+                market,
+                resolution,
+                settings=self.settings,
+                fill_on_candle=False,
+                max_data_age_s=self.settings.stale_data_s,
             )
         self.bot.candles = list(history)
         self.mode = "live" if real else "paper-live"
@@ -226,12 +240,17 @@ class BotRunner:
                     return
                 try:
                     book = await self.live.get_order_book(symbol)
-                    if self.paper is not None:
+                    book_ok = book_is_sane(book)
+                    if self.paper is not None and book_ok:
                         self.paper.on_book(book)  # fill pending paper orders against the real book
                     await self.bot.sync_orders()
-                    if book.mid is not None:
+                    if book.mid is not None and book_ok:
                         self.bot.last_price = book.mid
                     fresh = await self.live.get_candles(symbol, resolution, utcnow() - step * 5, utcnow())
+                    feed_age = (utcnow() - (max([last_ts, *(c.ts for c in fresh)]) + step)).total_seconds()
+                    silent = feed_age > step.total_seconds() + self.settings.stale_data_s
+                    self.bot.feed_stale = silent or not book_ok
+                    self.bot.risk.stale = self.bot.risk.stale or self.bot.feed_stale
                     for candle in fresh:
                         if candle.ts > last_ts:
                             await self.bot.on_candle(candle)
@@ -239,6 +258,10 @@ class BotRunner:
                             self.progress = (self.progress[0] + 1, 0)
                     failures = 0
                     self.error = None
+                    if not book_ok:
+                        self.error = "order book is empty or crossed; no new buys until it looks sane"
+                    elif silent:
+                        self.error = f"no new {resolution} candle for {int(feed_age)} s; no new buys"
                 except (httpx.HTTPError, WallexAPIError) as e:
                     failures += 1
                     self.error = f"market data unavailable ({type(e).__name__}); retrying"
@@ -288,6 +311,7 @@ class BotRunner:
             "speed_s": self.speed_s,
             "progress": {"done": self.progress[0], "total": self.progress[1]},
             "live_trading": self.mode == "live" and self.running,
+            "data_stale": self.bot is not None and self.bot.risk.stale,
         }
         if self.bot is None:
             return {**base, "bot": None, "log": [], "equity_curve": []}

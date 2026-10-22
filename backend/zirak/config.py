@@ -81,6 +81,7 @@ class Settings:
     recorder_book_interval_s: float = 15.0
     recorder_trades_interval_s: float = 30.0
     live_poll_s: float = 5.0  # live paper runner: how often to poll the book / candles
+    stale_data_s: float = 120.0  # no new buys when the newest closed candle is older than this (live)
 
     # --- LLM ----------------------------------------------------------------------------------
     mock_llm: bool = True
@@ -138,6 +139,7 @@ def load_settings(env_file: str | Path | None = None) -> Settings:
         recorder_book_interval_s=float(_str("RECORDER_BOOK_INTERVAL_S", "15")),
         recorder_trades_interval_s=float(_str("RECORDER_TRADES_INTERVAL_S", "30")),
         live_poll_s=float(_str("LIVE_POLL_S", "5")),
+        stale_data_s=float(_str("STALE_DATA_S", "120")),
         mock_llm=_bool("MOCK_LLM", True),
         llm_base_url=os.getenv("LLM_BASE_URL") or None,
         llm_api_key=os.getenv("LLM_API_KEY") or None,

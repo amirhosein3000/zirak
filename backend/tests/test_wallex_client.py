@@ -303,3 +303,50 @@ def test_balances_free_is_value_minus_locked(tmp_path: Path) -> None:
     bal = {"balances": {"TMN": {"asset": "TMN", "value": "16033085", "locked": "2507491"}}}
     out = run(client(live(tmp_path), Fake({"GET /v1/account/balances": ok(bal)})).get_balances())
     assert out["TMN"].free == D("13525594") and out["TMN"].total == D("16033085")
+
+
+def test_order_placement_is_throttled_to_the_documented_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import time
+
+    import zirak.exchange.wallex as wallex_mod
+
+    monkeypatch.setattr(wallex_mod, "ORDER_RATE_LIMIT", (2, 0.3))  # docs: 20 per 10 s; scaled down
+    fake = Fake(
+        {"POST /v1/account/orders": lambda _r: httpx.Response(201, json={"result": ORDER, "success": True})}
+    )
+    c = client(live(tmp_path), fake)
+    req = OrderRequest("USDTTMN", Side.BUY, OrderType.LIMIT, D("10"), D("268000"))
+
+    async def three() -> float:
+        t0 = time.monotonic()
+        for _ in range(3):
+            await c.place_order(req)
+        return time.monotonic() - t0
+
+    assert run(three()) >= 0.25  # the third order waited for the window to slide
+    assert len(fake.calls) == 3
+
+
+def test_low_rate_limit_remaining_slows_down(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
+    slept: list[float] = []
+
+    async def fake_sleep(s: float) -> None:
+        slept.append(s)
+
+    monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+    fake = Fake(
+        {
+            "GET /v1/depth": lambda _r: httpx.Response(
+                200,
+                json={"result": {"bid": [], "ask": []}, "success": True},
+                headers={"x-ratelimit-remaining": "2"},
+            )
+        }
+    )
+    c = client(settings, fake)
+    run(c.get_order_book("BTCTMN"))
+    assert slept == []
+    run(c.get_order_book("BTCTMN"))
+    assert slept == [1.0]

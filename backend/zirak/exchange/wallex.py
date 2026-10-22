@@ -14,6 +14,7 @@ import asyncio
 import json
 import secrets
 import time
+from collections import deque
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -65,6 +66,12 @@ STATUS_MAP = {
 }
 
 
+# docs/wallex-api/spot-trading.md: placing orders is limited to 20 requests per 10 s.
+ORDER_RATE_LIMIT = (20, 10.0)
+# Slow down when the server says we're close to its (undocumented-window) request limit.
+LOW_RATE_REMAINING = 5
+
+
 class WallexAPIError(RuntimeError):
     def __init__(self, status: int, message: str, body: Any = None) -> None:
         super().__init__(f"Wallex HTTP {status}: {message}")
@@ -106,6 +113,7 @@ class WallexClient(ExchangeClient):
         )
         self._markets: dict[str, Market] = {}
         self.rate_limit_remaining: int | None = None
+        self._order_times: deque[float] = deque()
         self._balances_cache: tuple[float, dict[str, Balance]] | None = None
 
     async def close(self) -> None:
@@ -116,6 +124,9 @@ class WallexClient(ExchangeClient):
         self, method: str, path: str, params: dict[str, Any] | None = None, body: dict[str, Any] | None = None
     ) -> Any:
         headers = {"x-api-key": self.settings.wallex_api_key} if self.settings.wallex_api_key else {}
+        if self.rate_limit_remaining is not None and self.rate_limit_remaining < LOW_RATE_REMAINING:
+            await asyncio.sleep(1.0)
+            self.rate_limit_remaining = None  # re-learn it from the next response
         # Only idempotent reads are retried. A POST that times out is never re-sent blindly.
         attempts = 4 if method == "GET" else 1
         delay = 1.0
@@ -272,8 +283,20 @@ class WallexClient(ExchangeClient):
             "client_id": client_id,
         }
         self._balances_cache = None
+        await self._throttle_orders()
         data = await self._request("POST", "/v1/account/orders", body=body)
         return self._parse_order(data["result"], fallback_id=client_id, tag=req.client_tag)
+
+    async def _throttle_orders(self) -> None:
+        """Stay under the documented order-placement limit (sliding window) instead of hitting 429s."""
+        limit, window = ORDER_RATE_LIMIT
+        now = time.monotonic()
+        while self._order_times and now - self._order_times[0] >= window:
+            self._order_times.popleft()
+        if len(self._order_times) >= limit:
+            await asyncio.sleep(window - (now - self._order_times[0]))
+            self._order_times.popleft()
+        self._order_times.append(time.monotonic())
 
     async def cancel_order(self, symbol: str, order_id: str) -> Order:
         # Cancelling reduces risk, so it works while the kill switch is engaged (but still needs live mode).

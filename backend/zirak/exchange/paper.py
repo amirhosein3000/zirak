@@ -3,11 +3,16 @@
 Fill model
 ----------
 - Candle mode (`on_candle`, used by backtests and replays): an order placed after candle *t* closed is
-  matched against candle *t+1*. Market orders fill at t+1's open moved by `slippage_bps`. Resting limit
-  orders fill when t+1 trades *through* the limit (buy: low < price, sell: high > price). Each order
-  may take at most `participation` x the candle's volume, so big orders fill partially.
+  matched against candle *t+1*. Market orders fill at t+1's open moved by `slippage_bps`. A limit order
+  that is marketable when it arrives (buy: open <= limit) takes liquidity like a market order, but never
+  beyond its limit, and pays the taker fee. Otherwise it rests and fills, as maker at its own limit
+  price, only when a later candle trades *through* it (buy: low < price, sell: high > price): a gap past
+  a resting order fills at the order's price, never at the better open. All orders on one candle share
+  `participation` x the candle's volume (unlimited when the candle reports no volume), so big orders
+  fill partially.
 - Book mode (`on_book`, used for live paper trading): market orders walk the visible book level by
-  level (plus `slippage_bps` for latency); limit orders fill against crossing levels.
+  level (plus `slippage_bps` for latency). A limit order that crosses the book on its first pass takes
+  the crossing levels at their prices (taker); later passes fill it as maker at its limit price.
 - Market orders are immediate-or-cancel: whatever cannot be filled on the next event is canceled.
   Limit orders keep resting until filled or canceled.
 - Fees follow `zirak.fees` (taker for market orders, maker for resting limit orders).
@@ -70,6 +75,7 @@ class PaperExchange(ExchangeClient):
         self._last_price: dict[str, Decimal] = {}
         self._fill_log: list[Fill] = []
         self._seq = 0
+        self._matched: set[str] = set()  # orders that already had one matching pass (now resting)
 
     # ---- market data: delegated --------------------------------------------------------------
     async def get_markets(self) -> list[Market]:
@@ -229,27 +235,36 @@ class PaperExchange(ExchangeClient):
     def on_candle(self, symbol: str, candle: Candle) -> list[Fill]:
         """Match open orders for `symbol` against a newly closed candle (see module docstring)."""
         fills_before = len(self._fill_log)
-        capacity = candle.volume * self.participation
+        market = self.markets[symbol]
+        # Volume shared by every order on this candle. None = the candle carries no volume information.
+        capacity: Decimal | None = candle.volume * self.participation if candle.volume > 0 else None
         ts = candle.ts
         for order in [o for o in self._orders.values() if o.symbol == symbol and o.status.is_open]:
+            first_pass = order.id not in self._matched
+            self._matched.add(order.id)
             if order.created_at > candle.ts and order.type is OrderType.MARKET:
                 # Placed after this candle opened (live replay ordering): match on its close instead.
                 ref = candle.close
             else:
                 ref = candle.open
-            room = order.remaining if capacity <= 0 else min(order.remaining, capacity)
+            room = order.remaining if capacity is None else min(order.remaining, max(capacity, ZERO))
+            filled = ZERO
             if order.type is OrderType.MARKET:
-                price = apply_slippage(ref, order.side, self.slippage_bps, self.markets[symbol])
-                capacity -= self._apply_fill(order, price, room, is_maker=False, ts=ts)
+                price = apply_slippage(ref, order.side, self.slippage_bps, market)
+                filled = self._apply_fill(order, price, room, is_maker=False, ts=ts)
                 self._finish_ioc(order, ts)
-                continue
-            assert order.price is not None
-            if order.side is Side.BUY and candle.low < order.price:
-                price = min(order.price, candle.open)
-                capacity -= self._apply_fill(order, price, room, is_maker=True, ts=ts)
-            elif order.side is Side.SELL and candle.high > order.price:
-                price = max(order.price, candle.open)
-                capacity -= self._apply_fill(order, price, room, is_maker=True, ts=ts)
+            else:
+                assert order.price is not None
+                buy = order.side is Side.BUY
+                marketable = candle.open <= order.price if buy else candle.open >= order.price
+                if first_pass and marketable:
+                    touch = apply_slippage(candle.open, order.side, self.slippage_bps, market)
+                    price = min(touch, order.price) if buy else max(touch, order.price)
+                    filled = self._apply_fill(order, price, room, is_maker=False, ts=ts)
+                elif (buy and candle.low < order.price) or (not buy and candle.high > order.price):
+                    filled = self._apply_fill(order, order.price, room, is_maker=True, ts=ts)
+            if capacity is not None:
+                capacity -= filled
         self._last_price[symbol] = candle.close
         return self._fill_log[fills_before:]
 
@@ -258,20 +273,25 @@ class PaperExchange(ExchangeClient):
         fills_before = len(self._fill_log)
         market = self.markets[book.symbol]
         for order in [o for o in self._orders.values() if o.symbol == book.symbol and o.status.is_open]:
+            first_pass = order.id not in self._matched
+            self._matched.add(order.id)
             levels = book.asks if order.side is Side.BUY else book.bids
             for level in levels:
                 if order.remaining <= 0 or not order.status.is_open:
                     break
+                touch = apply_slippage(level.price, order.side, self.slippage_bps, market)
                 if order.type is OrderType.LIMIT:
                     assert order.price is not None
-                    crosses = (
-                        level.price <= order.price if order.side is Side.BUY else level.price >= order.price
-                    )
+                    buy = order.side is Side.BUY
+                    crosses = level.price <= order.price if buy else level.price >= order.price
                     if not crosses:
                         break
-                    price, maker = order.price, True
+                    if first_pass:  # it took liquidity on arrival: taker at the level, capped by the limit
+                        price, maker = (min(touch, order.price) if buy else max(touch, order.price)), False
+                    else:  # it was resting and the market came to it
+                        price, maker = order.price, True
                 else:
-                    price, maker = apply_slippage(level.price, order.side, self.slippage_bps, market), False
+                    price, maker = touch, False
                 self._apply_fill(order, price, level.qty, is_maker=maker, ts=book.ts)
             if order.type is OrderType.MARKET:
                 self._finish_ioc(order, book.ts)

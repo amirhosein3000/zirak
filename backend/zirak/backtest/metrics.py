@@ -68,12 +68,15 @@ def compute_metrics(
 ) -> Metrics:
     eq = [float(p.equity) for p in curve]
     prices = [float(p.price) for p in curve]
+    fee = float(taker_fee)
     start = eq[0] if eq else 0.0
-    end = eq[-1] if eq else 0.0
+    # A position still open at the end is valued as if sold at the last close, paying the taker fee
+    # (buy-and-hold below pays the same exit fee), so open trades can't flatter the result.
+    exit_cost = float(curve[-1].position_qty * curve[-1].price) * fee if curve else 0.0
+    end = eq[-1] - exit_cost if eq else 0.0
     wins = sum(1 for x in exits if x > 0)
     exposure = sum(1 for p in curve if p.position_qty > 0) / len(curve) * 100 if curve else 0.0
     # Buy and hold: buy at the first price, sell at the last, paying the taker fee twice.
-    fee = float(taker_fee)
     if prices:
         bh = (prices[-1] / prices[0]) * (1 - fee) * (1 - fee) - 1
         bh_curve = [start * p / prices[0] for p in prices]

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from decimal import Decimal
 
 from zirak.config import Settings
@@ -39,8 +40,26 @@ class Executor:
                 touch = book.best_ask if req.side is Side.BUY else book.best_bid
                 ref_price = touch or ref_price
             req = self.protect(req, ref_price, self.settings.live_max_slippage_bps)
+            fitted = self.fit_cap(req, self.settings.max_order_for_quote(self.market.quote))
+            if fitted is None:
+                return None
+            req = fitted
             check_hard_limits(self.settings, self.market, req, ref_price)
         return await self.exchange.place_order(req)
+
+    def fit_cap(self, req: OrderRequest, cap: Decimal | None) -> OrderRequest | None:
+        """Shrink a live order so qty * price stays within the hard per-order cap.
+
+        The RiskManager sizes against the candle close, but the protective limit price can sit up to
+        `LIVE_MAX_SLIPPAGE_BPS` higher, which would otherwise trip the hard cap on a full-size order.
+        Returns None when the shrunk order would break the market's minimums.
+        """
+        if cap is None or req.price is None or req.qty * req.price <= cap:
+            return req
+        qty = self.market.round_qty(cap / req.price)
+        if self.market.check_order(qty, req.price) is not None:
+            return None
+        return replace(req, qty=qty)
 
     def protect(self, req: OrderRequest, ref_price: Decimal, max_slippage_bps: Decimal) -> OrderRequest:
         """Live "market" orders become marketable LIMIT orders with a worst acceptable price.
