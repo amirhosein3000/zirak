@@ -6,7 +6,7 @@ MOCK_LLM=true (or when the LLM is down) the whole app still works.
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Any, Protocol
 
 import httpx
 
@@ -21,12 +21,27 @@ class LLMProvider(Protocol):
         ...
 
 
+class ToolLLM(LLMProvider, Protocol):
+    """A provider that can also run tool-calling turns (used by the agent's posture layer)."""
+
+    async def chat_tools(
+        self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]
+    ) -> dict[str, Any] | None:
+        """One tool-calling turn: the assistant message (`content` and/or `tool_calls`), or None."""
+        ...
+
+
 class MockLLM:
     """Returns None so every feature uses its built-in deterministic (template / rule-based) answer."""
 
     name = "mock"
 
     async def chat(self, system: str, user: str, json_mode: bool = False) -> str | None:
+        return None
+
+    async def chat_tools(
+        self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]
+    ) -> dict[str, Any] | None:
         return None
 
 
@@ -60,8 +75,25 @@ class OpenAICompatLLM:
         except (httpx.HTTPError, KeyError, IndexError, ValueError):
             return None
 
+    async def chat_tools(
+        self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]
+    ) -> dict[str, Any] | None:
+        body: dict[str, Any] = {"model": self.model, "temperature": 0, "messages": messages, "tools": tools}
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout_s) as client:
+                r = await client.post(
+                    f"{self.base_url}/chat/completions",
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    json=body,
+                )
+                r.raise_for_status()
+                msg = r.json()["choices"][0]["message"]
+                return dict(msg) if isinstance(msg, dict) else None
+        except (httpx.HTTPError, KeyError, IndexError, ValueError):
+            return None
 
-def build_llm(settings: Settings) -> LLMProvider:
+
+def build_llm(settings: Settings) -> ToolLLM:
     if settings.mock_llm or not (settings.llm_base_url and settings.llm_api_key and settings.llm_model):
         return MockLLM()
     return OpenAICompatLLM(
