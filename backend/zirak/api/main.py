@@ -32,6 +32,8 @@ from zirak.llm.explain import explain_entry
 from zirak.llm.provider import build_llm
 from zirak.markets import ASSET_NAMES_FA, market_name_fa
 from zirak.models import RESOLUTION_SECONDS, Candle, Market, OrderBook, resolution_delta, utcnow
+from zirak.modules import AVAILABLE as MODULES_AVAILABLE
+from zirak.modules import mount as mount_modules
 from zirak.strategy.base import Strategy
 from zirak.strategy.registry import DEFAULT_PARAMS, STRATEGIES, catalog
 from zirak.strategy.registry import build_strategy as make_strategy
@@ -144,6 +146,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
     app.state.zirak = state
+    mounted = mount_modules(app, settings)
+
+    @app.get("/api/modules")
+    async def modules() -> dict[str, Any]:
+        return {"enabled": mounted, "available": MODULES_AVAILABLE}
 
     # ---- meta ------------------------------------------------------------------------------------
     @app.get("/api/health")

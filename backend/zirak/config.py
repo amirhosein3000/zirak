@@ -90,6 +90,19 @@ class Settings:
     llm_model: str | None = None
     llm_timeout_s: float = 30.0
 
+    # --- optional modules (zirak/modules) -------------------------------------------------------
+    modules: list[str] = field(
+        default_factory=lambda: ["regime", "orderbook", "news", "portfolio", "alerts", "coach", "competition"]
+    )
+    news_source: str = "mock"  # "mock" (offline, canned) or "rss"
+    news_rss_urls: list[str] = field(default_factory=list)
+    news_risk: bool = False  # let very negative news shrink new buys of a running bot
+    alerts_interval_s: float = 30.0
+    alerts_telegram_token: str | None = None
+    alerts_telegram_chat_id: str | None = None
+    alerts_bale_token: str | None = None
+    alerts_bale_chat_id: str | None = None
+
     # --- API ----------------------------------------------------------------------------------
     cors_origins: list[str] = field(default_factory=lambda: ["http://localhost:3000"])
 
@@ -145,5 +158,14 @@ def load_settings(env_file: str | Path | None = None) -> Settings:
         llm_api_key=os.getenv("LLM_API_KEY") or None,
         llm_model=os.getenv("LLM_MODEL") or None,
         llm_timeout_s=float(_str("LLM_TIMEOUT_S", "30")),
+        modules=_list("MODULES", "regime,orderbook,news,portfolio,alerts,coach,competition"),
+        news_source=_str("NEWS_SOURCE", "mock"),
+        news_rss_urls=_list("NEWS_RSS_URLS", ""),
+        news_risk=_bool("NEWS_RISK", False),
+        alerts_interval_s=float(_str("ALERTS_INTERVAL_S", "30")),
+        alerts_telegram_token=os.getenv("ALERTS_TELEGRAM_TOKEN") or None,
+        alerts_telegram_chat_id=os.getenv("ALERTS_TELEGRAM_CHAT_ID") or None,
+        alerts_bale_token=os.getenv("ALERTS_BALE_TOKEN") or None,
+        alerts_bale_chat_id=os.getenv("ALERTS_BALE_CHAT_ID") or None,
         cors_origins=_list("CORS_ORIGINS", "http://localhost:3000"),
     )

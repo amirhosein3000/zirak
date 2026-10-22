@@ -89,6 +89,9 @@ class RiskManager:
         self.killed = False
         #: market data is too old to trust (set by the Bot / live runner): no new buys until it is fresh
         self.stale = False
+        #: 0..1 multiplier on new buy sizes set by optional inputs (e.g. very negative news). Never > 1.
+        self.size_factor = ONE
+        self.size_factor_note_fa = ""
         self.candle_index = 0
         self.cooldown_until = -1
 
@@ -203,6 +206,10 @@ class RiskManager:
                 "max_exposure",
                 [f"سهم این دارایی از سرمایه به سقف {fa_pct(self.cfg.max_position_pct, 0)} رسیده است."],
             )
+        factor = min(max(self.size_factor, ZERO), ONE)
+        if factor < ONE:
+            want = want * factor
+            notes.append(self.size_factor_note_fa or f"حجم خرید به {fa_pct(factor * HUNDRED, 0)} کاهش یافت.")
         quote = want
         if quote > room:
             quote = room
