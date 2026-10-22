@@ -43,11 +43,15 @@ SPEC:
 | Kill switch / safety | `runner.kill`, `zirak kill`, dashboard button | Done |
 | Dashboard (PnL, positions, orders) | `/dashboard` | Done |
 | Mobile / PWA / Persian RTL | `frontend/` | Done |
-| Competition mode (headless, logs, perf file) | `zirak paper` (replay only) | Needs a live-data runner + perf file |
-| Portfolio / multi-asset rebalance | — | New (prompt 2 in the prompts file) |
-| News / sentiment | — | New |
-| Alerts (Telegram/Bale) | — | New |
-| Market regime detection | `llm/brief.py` trend/volatility labels | Partial |
+| Competition mode (headless, logs, perf file) | `modules/competition.py`, `zirak compete` | Done for **paper** (replay or live data): sleeves, team limits, `orders.csv`/`equity.csv`/`report.json`. Real-account sleeves: new work (see `docs/fake-specs/dry-run-spec-b.md`) |
+| Portfolio / multi-asset rebalance | `modules/portfolio.py`, `/tools` | Done (backtest + suggestion; no auto-execution) |
+| News / sentiment | `modules/news.py`, `/tools` | Done (mock or RSS; optional size reduction) |
+| Alerts (Telegram/Bale) | `modules/alerts.py`, `/tools` | Done |
+| Market regime detection | `modules/regime.py`, `/tools` | Done (+ regime-gated strategies) |
+| Order-book intelligence, fair USDT price | `modules/orderbook.py`, `/tools` | Done |
+| AI coach on past trades | `modules/coach.py`, `/tools` | Done |
+| Strategy evidence | `docs/research.md`, `zirak research` | Done: nothing validated yet on 60 days of data |
+| Restart safety for long live runs | — | **Missing**: bot ledger is in memory |
 | Wallex sandbox / competition account | new `ExchangeClient` implementation | New, small (adapter pattern) |
 
 ## 3. Default triage

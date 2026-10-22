@@ -1,6 +1,6 @@
 # Progress
 
-_Last updated: 2026-10-22 (hero features)_
+_Last updated: 2026-10-22 (prompts 1–4: hardening, modules, research, dry run)_
 
 ## Done
 - [x] Name: **Zirak (زیرک)**. Private repo github.com/amirhosein3000/zirak (renamed from Tarazoo on 2026-10-21).
@@ -32,20 +32,45 @@ _Last updated: 2026-10-22 (hero features)_
       `/api/live/start`; LIMIT orders priced off the live book, capped by `MAX_ORDER_*`, canceled after a TTL;
       read-only/cancel calls need only the key. Tested end to end against a mocked Wallex.
 - [x] Backtests 3-10x faster (lazy frames, numpy EMA/RSI): a 90-day 1h backtest takes ~0.7 s; duel ~5 s
-- [x] Quality gates green: ruff, mypy --strict, **92 pytest tests** (network-free), eslint, tsc, next build
+- [x] **Prompt 1 — verify & harden** (2026-10-22): paper fills fixed (shared volume cap no longer resets
+      to unlimited; marketable limits are takers at the touch capped by their limit, resting limits makers
+      at their own price, gaps never give a better price); live orders shrink to fit `MAX_ORDER_*` after the
+      protective price (before: a full-size order tripped the hard cap and killed the bot); `STALE_DATA_S`
+      blocks new buys on old candles / silent feed / empty or crossed book; order placement throttled to the
+      documented 20 per 10 s; open positions pay the exit fee in final metrics; kill switch proven with the
+      market data down and via the KILL file; DLL proven end to end; 380 px UI walk (signed numbers in RTL,
+      chart labels); lockfile synced (`npm ci` failed); CLAUDE.md matches the code
+- [x] **Prompt 2 — modules** behind `MODULES` (`zirak/modules/`, `/tools` page, CLAUDE.md "Modules"):
+      regime detector + regime-gated strategies, order-book intelligence + fair USDT price, news sentiment
+      (mock/RSS, optional buy-size reduction), portfolio rebalancing, alerts (in-app/Telegram/Bale), AI
+      coach, competition mode (`zirak compete`: paper sleeves, team drawdown / daily-loss stop via the kill
+      switch, `performance.json`, `orders.csv`, `equity.csv`, `report.json`)
+- [x] **Prompt 3 — research**: `zirak research` walk-forward; [docs/research.md](research.md): **0 of 75
+      configurations survive** out of sample on the 60-day sample (too few trades; fees). Experimental
+      presets in `strategy/presets.py`; competition default = dip-buy preset, 50 % reserve
+- [x] **Prompt 4 — dry run**: `docs/fake-specs/` (spec A product, spec B 48 h contest, dry-run plan);
+      cheap prep done (order state-change log, spec log files, refuse real start with stray open orders)
+- [x] Quality gates green: ruff, mypy --strict, **126 pytest tests** (network-free), eslint, tsc, next build
 
 ## Demo story (real Wallex data)
 Time machine on BTCTMN finds the real ~36 % crash (Ordibehesht–Tir 1405). The example sentence
 «وقتی بیت‌کوین ۵٪ ریخت، با ۱۰٪ سرمایه بخر و با ۳٪ سود بفروش» scores 82 (A): −1.2 % vs −19.3 % buy-and-hold,
 max drawdown 2.3 % vs 36 %; the duel ranks it #1 of 7, the emotional trader 6th, buy-and-hold last.
+_Re-check these numbers on the local DB before the pitch: they were measured before the 2026-10-22
+fill/metrics fixes (expected impact small: the rule strategy uses single market orders; an open
+position now pays the exit fee). On the 60-day committed sample the "worst crash" chip finds a milder
+period: score 68 (B), −0.03 % vs −1.25 % buy-and-hold, max drawdown 0.6 % vs 10.1 %._
 
 ## Next
-1. Prompt 1 from the prompts file: verify and harden (money maths audit, stale-data detection, resilience).
-2. Leave `zirak record` running for days (or on a server in Iran) so backtests use fresh real data.
-3. With a real API key (trade permission only): read `/v1/account/fee` and replace the fee placeholders,
+1. Leave `zirak record` running for days (or on a server in Iran), `zirak backfill` 180 days, then re-run
+   `zirak research`: with 60 days nothing can reach 30 out-of-sample trades.
+2. With a real API key (trade permission only): read `/v1/account/fee` and replace the fee placeholders,
    then a supervised **tiny** live test (one order far from the market, then cancel) to confirm the
    UNVERIFIED order fields below. Never without the user confirming the risk limits.
-4. Prompt 2 (extra modules), prompt 3 (strategy research on the real data), pitch polish.
+3. Biggest gaps if the spec is a real-money contest (see `docs/fake-specs/dry-run-spec-b.md`):
+   **restart safety** (the bot ledger lives in memory; a restart forgets positions) and **real-account
+   sleeves** for competition mode (today it is paper only).
+4. Prompt 7 (DEMO_MODE, pitch polish, deploy) closer to the event.
 
 ## UNVERIFIED (docs silent or ambiguous; see docs/wallex-api/README.md)
 - Spot **minimum order size / min notional**: not in the docs (placeholders: 100,000 TMN, 5 USDT).
@@ -64,6 +89,9 @@ Spot swagger/service pages (order endpoints' exact schemas and errors), the base
 a page for `GET /v1/all-fairPrice`, spot minimum order sizes, and a public fee table.
 
 ## Open issues / notes
+- This cloud session could not reach `api.wallex.ir` (no route from abroad), so research used the
+  committed sample; nothing here was tested against the live exchange today.
+- Competition mode and the paper bot share the KILL file: `zirak kill` / `POST /api/kill` stop both.
 - The machine's HTTPS proxy (127.0.0.1:10808) breaks TLS to Wallex; Wallex calls bypass proxies
   (`WALLEX_USE_SYSTEM_PROXY=false`). On a server abroad Wallex may be unreachable; run the recorder in Iran.
 - `timeout -s INT` doesn't stop `zirak paper` on Windows; use `zirak kill` (KILL file) or Ctrl+C.

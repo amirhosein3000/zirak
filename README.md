@@ -18,7 +18,11 @@ Zirak is a smart, explainable, risk-first trading assistant built for the Wallex
 - **Risk first** — position sizing, max exposure, per-order cap, stop-loss / take-profit, daily loss
   limit, cooldown, market precision and minimums; a one-tap kill switch (UI, API, CLI and a KILL file).
 - **Honest backtests** — the same Bot/Strategy/RiskManager code as paper trading, fills on the *next*
-  candle, fees, slippage, volume-limited partial fills, compared against buy-and-hold.
+  candle, fees, slippage, volume-limited partial fills, compared against buy-and-hold; walk-forward
+  research reports out-of-sample results only ([`docs/research.md`](docs/research.md)).
+- **Optional modules** (`MODULES` flag, `/tools` page) — market regime, order-book intelligence and the
+  fair Toman price of USDT, news sentiment, portfolio rebalancing, alerts (Telegram/Bale), an AI trading
+  coach, and a headless competition mode with team risk limits and audit logs.
 
 ## Status
 
@@ -53,6 +57,8 @@ On macOS/Linux use `backend/.venv/bin/...` instead of `Scripts/...exe`.
 | Backtest a baseline | `zirak backtest --strategy ema_cross --symbol BTCTMN --resolution 1h` |
 | Backtest a rules spec | `zirak backtest --spec spec.json` |
 | Headless paper bot (replay) | `zirak paper --strategy rsi_reversion --symbol ETHTMN --speed 0.2` |
+| Walk-forward research | `zirak research` (writes `docs/research-results.json`) |
+| Competition mode (paper) | `zirak compete [--config cfg.json]` (files in `data/competition/<name>/`) |
 | **Kill switch** | `zirak kill` (then `zirak reset-kill`) |
 | API server | `zirak serve --reload` |
 | Backfill Wallex history | `zirak backfill` (1m: 3 days, 1h: 180 days, 1d: 1000 days by default) |
@@ -76,7 +82,8 @@ Baseline strategies: `ema_cross`, `rsi_reversion`, `grid`, `dca`. Reports are sa
 ```
 backend/   FastAPI + engine (Python 3.12)      → see CLAUDE.md for the module map
 frontend/  Next.js 16 PWA, RTL Persian, Vazirmatn
-docs/      progress.md, spec-day.md, pitch.md (Persian), wallex-api/ (exchange docs)
+docs/      progress.md, spec-day.md, research.md, pitch.md (Persian), fake-specs/ (rehearsal),
+           wallex-api/ (exchange docs)
 ```
 
 ## Quality gates
