@@ -8,7 +8,10 @@
 #   LIARA_TEAM_ID     Liara team id (leave unset to deploy to the token owner's personal account)
 # Optional repository variables: LIARA_API_APP (default zirak-api), LIARA_WEB_APP (default zirak-web),
 #   LIARA_API_URL (default https://<api app>.liara.run, baked into the web app).
-# Trading secrets (WALLEX_API_KEY, LLM_*, ...) are NOT stored in GitHub: set them on the Liara app (see DEPLOY.md).
+# Optional secrets synced into the Liara API app on every deploy: WALLEX_API_KEY, WALLEX_SUB_ACCOUNT_CLIENT_ID,
+#   LLM_API_KEY. Optional variables: LLM_BASE_URL, LLM_MODEL, WALLEX_PROP_PACKAGE_ID, ZIRAK_AGENT (shadow),
+#   LIVE_TRADING (false), MAX_ORDER_TMN, MAX_ORDER_USDT, DAILY_LOSS_LIMIT_PCT, WALLEX_CREDIT_ACCOUNT (true).
+#   Real orders only when LIVE_TRADING=true and ZIRAK_AGENT includes live: set those only after the team agrees.
 name: Deploy to Liara
 
 on:
@@ -61,6 +64,35 @@ jobs:
         run: npm install -g @liara/cli
       - name: Check the token is set
         run: test -n "$LIARA_API_TOKEN" || { echo "::error::set the LIARA_API_TOKEN repository secret"; exit 1; }
+      - name: Sync settings and trading secrets to the API app
+        if: inputs.target != 'web'
+        env:
+          WALLEX_API_KEY: ${{ secrets.WALLEX_API_KEY }}
+          WALLEX_SUB_ACCOUNT_CLIENT_ID: ${{ secrets.WALLEX_SUB_ACCOUNT_CLIENT_ID }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          WALLEX_PROP_PACKAGE_ID: ${{ vars.WALLEX_PROP_PACKAGE_ID }}
+          WEB_URL: ${{ vars.LIARA_WEB_URL }}
+        run: |
+          # Non-secret settings come from repository variables (safe defaults: shadow mode, no real orders).
+          set -- \
+            "DATA_SOURCE=wallex" \
+            "CORS_ORIGINS=${WEB_URL:-https://$WEB_APP.liara.run}" \
+            "ZIRAK_AGENT=${{ vars.ZIRAK_AGENT || 'shadow' }}" \
+            "ZIRAK_BOOTSTRAP=true" \
+            "LIVE_TRADING=${{ vars.LIVE_TRADING || 'false' }}" \
+            "MAX_ORDER_TMN=${{ vars.MAX_ORDER_TMN || '1500000' }}" \
+            "MAX_ORDER_USDT=${{ vars.MAX_ORDER_USDT || '50' }}" \
+            "DAILY_LOSS_LIMIT_PCT=${{ vars.DAILY_LOSS_LIMIT_PCT || '2.5' }}" \
+            "WALLEX_CREDIT_ACCOUNT=${{ vars.WALLEX_CREDIT_ACCOUNT || 'true' }}"
+          [ -n "$WALLEX_API_KEY" ] && set -- "$@" "WALLEX_API_KEY=$WALLEX_API_KEY"
+          [ -n "$WALLEX_SUB_ACCOUNT_CLIENT_ID" ] && set -- "$@" "WALLEX_SUB_ACCOUNT_CLIENT_ID=$WALLEX_SUB_ACCOUNT_CLIENT_ID"
+          [ -n "$WALLEX_PROP_PACKAGE_ID" ] && set -- "$@" "WALLEX_PROP_PACKAGE_ID=$WALLEX_PROP_PACKAGE_ID"
+          if [ -n "$LLM_API_KEY" ] && [ -n "$LLM_BASE_URL" ] && [ -n "$LLM_MODEL" ]; then
+            set -- "$@" "MOCK_LLM=false" "LLM_API_KEY=$LLM_API_KEY" "LLM_BASE_URL=$LLM_BASE_URL" "LLM_MODEL=$LLM_MODEL"
+          fi
+          liara env set --app "$API_APP" --api-token "$LIARA_API_TOKEN" ${LIARA_TEAM_ID:+--team-id "$LIARA_TEAM_ID"} --force "$@"
       - name: Deploy the API + trading agent
         if: inputs.target != 'web'
         working-directory: backend
