@@ -10,6 +10,8 @@ These parts of the Wallex API are kept in `raw/out-of-scope/` for reference only
 - `GET /v1/account/wallets/{symbol}?network=`: crypto deposit addresses
 
 ## Trading credit / prop sub-accounts
+**Partly in scope since 2026-10-22:** the challenge account is a credit plan; three read-only calls are
+used, see [credit-account.md](credit-account.md). Everything else below stays out of scope.
 `raw/out-of-scope/trading-credit/` (guide + OpenAPI). `/sub-accounts`, `/sub-accounts/transfers`
 (**transfer: forbidden**), `/v1/account/balances-detail`, `/v1/prop/packages*`, `/v1/prop/user/packages*`.
 Leveraged credit packages with daily fees and liquidation limits. Each sub-account has its own API key and

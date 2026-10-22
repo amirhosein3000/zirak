@@ -12,6 +12,7 @@ Anything else is `UNVERIFIED`.
 | [market-data.md](market-data.md) | Markets, candles (`udf/history`), depth, trades, fair price | Yes (public) |
 | [spot-trading.md](spot-trading.md) | Order types, place / cancel / get / list / open orders | Yes (live mode only) |
 | [account.md](account.md) | Balances, fee tier | Yes (live mode only) |
+| [credit-account.md](credit-account.md) | The challenge's credit (prop) sub-account: balances-detail, plan limits, unavailable markets | Yes (read-only) |
 | [websocket.md](websocket.md) | Centrifugo v2 + deprecated v1, channels, limits, private events | Optional stream |
 | [out-of-scope.md](out-of-scope.md) | Margin, trading credit, OTC, banking, **withdrawals** | **Never** |
 

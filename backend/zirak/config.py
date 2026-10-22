@@ -59,6 +59,10 @@ class Settings:
     wallex_ws_v1_url: str = "wss://api.wallex.ir/ws"  # deprecated v1, used as fallback
     wallex_use_system_proxy: bool = False  # the local HTTPS proxy breaks TLS to Wallex
     wallex_timeout_s: float = 20.0
+    # Challenge / credit ("trading credit", prop) sub-account: own API key and wallet. Read-only prop calls.
+    wallex_credit_account: bool = False  # balances from /v1/account/balances-detail (total/freeze/available)
+    wallex_sub_account_client_id: str | None = None  # sent as `sub-account-client-id` on prop/balance calls
+    wallex_prop_package_id: str | None = None  # to read the package's unavailableMarkets
     data_source: str = "replay"  # "replay" (offline) or "wallex" (live public data)
     markets: list[str] = field(default_factory=lambda: ["USDTTMN", "BTCTMN", "BTCUSDT", "ETHTMN", "ETHUSDT"])
 
@@ -81,6 +85,7 @@ class Settings:
     recorder_book_interval_s: float = 15.0
     recorder_trades_interval_s: float = 30.0
     live_poll_s: float = 5.0  # live paper runner: how often to poll the book / candles
+    stale_data_s: float = 120.0  # no new buys when the newest closed candle is older than this (live)
 
     # --- LLM ----------------------------------------------------------------------------------
     mock_llm: bool = True
@@ -88,6 +93,19 @@ class Settings:
     llm_api_key: str | None = None
     llm_model: str | None = None
     llm_timeout_s: float = 30.0
+
+    # --- optional modules (zirak/modules) -------------------------------------------------------
+    modules: list[str] = field(
+        default_factory=lambda: ["regime", "orderbook", "news", "portfolio", "alerts", "coach", "competition"]
+    )
+    news_source: str = "mock"  # "mock" (offline, canned) or "rss"
+    news_rss_urls: list[str] = field(default_factory=list)
+    news_risk: bool = False  # let very negative news shrink new buys of a running bot
+    alerts_interval_s: float = 30.0
+    alerts_telegram_token: str | None = None
+    alerts_telegram_chat_id: str | None = None
+    alerts_bale_token: str | None = None
+    alerts_bale_chat_id: str | None = None
 
     # --- API ----------------------------------------------------------------------------------
     cors_origins: list[str] = field(default_factory=lambda: ["http://localhost:3000"])
@@ -122,6 +140,9 @@ def load_settings(env_file: str | Path | None = None) -> Settings:
         wallex_ws_v1_url=_str("WALLEX_WS_V1_URL", "wss://api.wallex.ir/ws"),
         wallex_use_system_proxy=_bool("WALLEX_USE_SYSTEM_PROXY", False),
         wallex_timeout_s=float(_str("WALLEX_TIMEOUT_S", "20")),
+        wallex_credit_account=_bool("WALLEX_CREDIT_ACCOUNT", False),
+        wallex_sub_account_client_id=os.getenv("WALLEX_SUB_ACCOUNT_CLIENT_ID") or None,
+        wallex_prop_package_id=os.getenv("WALLEX_PROP_PACKAGE_ID") or None,
         data_source=_str("DATA_SOURCE", "replay"),
         markets=_list("MARKETS", "USDTTMN,BTCTMN,BTCUSDT,ETHTMN,ETHUSDT"),
         fee_taker_pct=_dec("FEE_TAKER_PCT", "0.25") or Decimal("0.25"),
@@ -138,10 +159,20 @@ def load_settings(env_file: str | Path | None = None) -> Settings:
         recorder_book_interval_s=float(_str("RECORDER_BOOK_INTERVAL_S", "15")),
         recorder_trades_interval_s=float(_str("RECORDER_TRADES_INTERVAL_S", "30")),
         live_poll_s=float(_str("LIVE_POLL_S", "5")),
+        stale_data_s=float(_str("STALE_DATA_S", "120")),
         mock_llm=_bool("MOCK_LLM", True),
         llm_base_url=os.getenv("LLM_BASE_URL") or None,
         llm_api_key=os.getenv("LLM_API_KEY") or None,
         llm_model=os.getenv("LLM_MODEL") or None,
         llm_timeout_s=float(_str("LLM_TIMEOUT_S", "30")),
+        modules=_list("MODULES", "regime,orderbook,news,portfolio,alerts,coach,competition"),
+        news_source=_str("NEWS_SOURCE", "mock"),
+        news_rss_urls=_list("NEWS_RSS_URLS", ""),
+        news_risk=_bool("NEWS_RISK", False),
+        alerts_interval_s=float(_str("ALERTS_INTERVAL_S", "30")),
+        alerts_telegram_token=os.getenv("ALERTS_TELEGRAM_TOKEN") or None,
+        alerts_telegram_chat_id=os.getenv("ALERTS_TELEGRAM_CHAT_ID") or None,
+        alerts_bale_token=os.getenv("ALERTS_BALE_TOKEN") or None,
+        alerts_bale_chat_id=os.getenv("ALERTS_BALE_CHAT_ID") or None,
         cors_origins=_list("CORS_ORIGINS", "http://localhost:3000"),
     )

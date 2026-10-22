@@ -1,0 +1,5299 @@
+{
+ "meta": {
+  "data": "recorded",
+  "fee_taker_pct": "0.25",
+  "fee_maker_pct": "0.20",
+  "slippage_bps": "5",
+  "windows": {
+   "1h": [
+    480,
+    240
+   ],
+   "4h": [
+    120,
+    60
+   ],
+   "1d": [
+    120,
+    60
+   ]
+  }
+ },
+ "results": [
+  {
+   "key": "ema_cross",
+   "symbol": "USDTTMN",
+   "resolution": "1h",
+   "oos_return_pct": -1.589,
+   "oos_max_dd_pct": -2.436,
+   "oos_trades": 4,
+   "is_return_pct": 2.42,
+   "bh_return_pct": 14.646,
+   "bh_max_dd_pct": -6.545,
+   "verdict": "only 4 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "fast": 8,
+    "slow": 50,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "fast": 12,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": 0.627,
+     "oos_return_pct": -1.2894,
+     "oos_max_dd_pct": -2.4356,
+     "oos_trades": 2,
+     "bh_return_pct": 1.1427,
+     "bh_max_dd_pct": -2.7712
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "fast": 20,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": -0.108,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 14.1791,
+     "bh_max_dd_pct": -2.7798
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": 6.741,
+     "oos_return_pct": -0.4288,
+     "oos_max_dd_pct": -0.9664,
+     "oos_trades": 2,
+     "bh_return_pct": -2.205,
+     "bh_max_dd_pct": -6.1842
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "USDTTMN",
+   "resolution": "1h",
+   "oos_return_pct": 0.403,
+   "oos_max_dd_pct": -2.354,
+   "oos_trades": 3,
+   "is_return_pct": 0.808,
+   "bh_return_pct": 14.646,
+   "bh_max_dd_pct": -6.545,
+   "verdict": "only 3 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 30,
+    "high": 65,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "period": 14,
+      "low": 35,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.283,
+     "oos_return_pct": 0.5841,
+     "oos_max_dd_pct": -0.5445,
+     "oos_trades": 2,
+     "bh_return_pct": 1.1427,
+     "bh_max_dd_pct": -2.7712
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "period": 14,
+      "low": 30,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.957,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 14.1791,
+     "bh_max_dd_pct": -2.7798
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "period": 14,
+      "low": 30,
+      "high": 65,
+      "size_pct": 40
+     },
+     "is_return_pct": 1.184,
+     "oos_return_pct": -0.28,
+     "oos_max_dd_pct": -2.3538,
+     "oos_trades": 1,
+     "bh_return_pct": -2.205,
+     "bh_max_dd_pct": -6.1842
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "USDTTMN",
+   "resolution": "1h",
+   "oos_return_pct": -1.987,
+   "oos_max_dd_pct": -2.703,
+   "oos_trades": 47,
+   "is_return_pct": -0.448,
+   "bh_return_pct": 14.646,
+   "bh_max_dd_pct": -6.545,
+   "verdict": "lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 10,
+    "range_pct": 12
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 8
+     },
+     "is_return_pct": -0.184,
+     "oos_return_pct": -0.923,
+     "oos_max_dd_pct": -0.9145,
+     "oos_trades": 30,
+     "bh_return_pct": 1.1427,
+     "bh_max_dd_pct": -2.7712
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 12
+     },
+     "is_return_pct": -0.497,
+     "oos_return_pct": -0.409,
+     "oos_max_dd_pct": -0.4237,
+     "oos_trades": 7,
+     "bh_return_pct": 14.1791,
+     "bh_max_dd_pct": -2.7798
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 12
+     },
+     "is_return_pct": -0.663,
+     "oos_return_pct": -0.7177,
+     "oos_max_dd_pct": -1.4174,
+     "oos_trades": 10,
+     "bh_return_pct": -2.205,
+     "bh_max_dd_pct": -6.1842
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "USDTTMN",
+   "resolution": "1h",
+   "oos_return_pct": 0.394,
+   "oos_max_dd_pct": -3.194,
+   "oos_trades": 4,
+   "is_return_pct": 3.593,
+   "bh_return_pct": 14.646,
+   "bh_max_dd_pct": -6.545,
+   "verdict": "only 4 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "every": 12,
+    "size_pct": 5,
+    "take_profit_pct": 6,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 4.69,
+     "oos_return_pct": 0.9262,
+     "oos_max_dd_pct": -1.3925,
+     "oos_trades": 0,
+     "bh_return_pct": 1.1427,
+     "bh_max_dd_pct": -2.7712
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 2.2623,
+     "oos_max_dd_pct": -0.2582,
+     "oos_trades": 3,
+     "bh_return_pct": 14.1791,
+     "bh_max_dd_pct": -2.7798
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 6.09,
+     "oos_return_pct": -2.9965,
+     "oos_max_dd_pct": -3.0843,
+     "oos_trades": 1,
+     "bh_return_pct": -2.205,
+     "bh_max_dd_pct": -6.1842
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "USDTTMN",
+   "resolution": "1h",
+   "oos_return_pct": 0.573,
+   "oos_max_dd_pct": -0.202,
+   "oos_trades": 3,
+   "is_return_pct": 0.0,
+   "bh_return_pct": 14.646,
+   "bh_max_dd_pct": -6.545,
+   "verdict": "only 3 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "pct": 3,
+    "lookback": 24,
+    "take_profit_pct": 2,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.1765,
+     "oos_max_dd_pct": -0.0905,
+     "oos_trades": 1,
+     "bh_return_pct": 1.1427,
+     "bh_max_dd_pct": -2.7712
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 14.1791,
+     "bh_max_dd_pct": -2.7798
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.3961,
+     "oos_max_dd_pct": -0.2016,
+     "oos_trades": 2,
+     "bh_return_pct": -2.205,
+     "bh_max_dd_pct": -6.1842
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "BTCTMN",
+   "resolution": "1h",
+   "oos_return_pct": 0.967,
+   "oos_max_dd_pct": -4.949,
+   "oos_trades": 5,
+   "is_return_pct": 6.208,
+   "bh_return_pct": 23.507,
+   "bh_max_dd_pct": -9.856,
+   "verdict": "only 5 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "fast": 12,
+    "slow": 50,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "fast": 12,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": 3.83,
+     "oos_return_pct": 3.6157,
+     "oos_max_dd_pct": -2.3182,
+     "oos_trades": 2,
+     "bh_return_pct": 12.0154,
+     "bh_max_dd_pct": -3.4865
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "fast": 12,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": 1.729,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 17.1356,
+     "bh_max_dd_pct": -3.449
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "fast": 12,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": 13.065,
+     "oos_return_pct": -2.7987,
+     "oos_max_dd_pct": -2.6935,
+     "oos_trades": 3,
+     "bh_return_pct": -7.2739,
+     "bh_max_dd_pct": -9.2174
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "BTCTMN",
+   "resolution": "1h",
+   "oos_return_pct": -0.017,
+   "oos_max_dd_pct": -1.41,
+   "oos_trades": 2,
+   "is_return_pct": 0.663,
+   "bh_return_pct": 23.507,
+   "bh_max_dd_pct": -9.856,
+   "verdict": "only 2 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 25,
+    "high": 55,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "period": 14,
+      "low": 30,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.889,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 12.0154,
+     "bh_max_dd_pct": -3.4865
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "period": 14,
+      "low": 30,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 1.102,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 17.1356,
+     "bh_max_dd_pct": -3.449
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": -0.0169,
+     "oos_max_dd_pct": -1.4099,
+     "oos_trades": 2,
+     "bh_return_pct": -7.2739,
+     "bh_max_dd_pct": -9.2174
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "BTCTMN",
+   "resolution": "1h",
+   "oos_return_pct": -1.848,
+   "oos_max_dd_pct": -1.86,
+   "oos_trades": 24,
+   "is_return_pct": 0.939,
+   "bh_return_pct": 23.507,
+   "bh_max_dd_pct": -9.856,
+   "verdict": "only 24 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 10,
+    "range_pct": 5
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 12
+     },
+     "is_return_pct": 0.047,
+     "oos_return_pct": -0.1918,
+     "oos_max_dd_pct": -0.2564,
+     "oos_trades": 12,
+     "bh_return_pct": 12.0154,
+     "bh_max_dd_pct": -3.4865
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 8
+     },
+     "is_return_pct": 2.846,
+     "oos_return_pct": -0.1856,
+     "oos_max_dd_pct": -0.2147,
+     "oos_trades": 8,
+     "bh_return_pct": 17.1356,
+     "bh_max_dd_pct": -3.449
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 5
+     },
+     "is_return_pct": -0.077,
+     "oos_return_pct": -1.4769,
+     "oos_max_dd_pct": -1.4769,
+     "oos_trades": 4,
+     "bh_return_pct": -7.2739,
+     "bh_max_dd_pct": -9.2174
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "BTCTMN",
+   "resolution": "1h",
+   "oos_return_pct": -0.136,
+   "oos_max_dd_pct": -3.121,
+   "oos_trades": 7,
+   "is_return_pct": 3.84,
+   "bh_return_pct": 23.507,
+   "bh_max_dd_pct": -9.856,
+   "verdict": "only 7 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "every": 12,
+    "size_pct": 5,
+    "take_profit_pct": 6,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "every": 48,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 0.318,
+     "oos_return_pct": 0.2362,
+     "oos_max_dd_pct": -0.1996,
+     "oos_trades": 2,
+     "bh_return_pct": 12.0154,
+     "bh_max_dd_pct": -3.4865
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 2.741,
+     "oos_return_pct": 2.6163,
+     "oos_max_dd_pct": -0.4682,
+     "oos_trades": 4,
+     "bh_return_pct": 17.1356,
+     "bh_max_dd_pct": -3.449
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 8.461,
+     "oos_return_pct": -3.0445,
+     "oos_max_dd_pct": -3.0132,
+     "oos_trades": 1,
+     "bh_return_pct": -7.2739,
+     "bh_max_dd_pct": -9.2174
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "BTCTMN",
+   "resolution": "1h",
+   "oos_return_pct": 1.006,
+   "oos_max_dd_pct": -0.56,
+   "oos_trades": 2,
+   "is_return_pct": 1.236,
+   "bh_return_pct": 23.507,
+   "bh_max_dd_pct": -9.856,
+   "verdict": "only 2 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "pct": 3,
+    "lookback": 24,
+    "take_profit_pct": 5,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 1.045,
+     "oos_return_pct": 0.0653,
+     "oos_max_dd_pct": -0.2671,
+     "oos_trades": 0,
+     "bh_return_pct": 12.0154,
+     "bh_max_dd_pct": -3.4865
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 1.093,
+     "oos_return_pct": 1.0835,
+     "oos_max_dd_pct": -0.3574,
+     "oos_trades": 2,
+     "bh_return_pct": 17.1356,
+     "bh_max_dd_pct": -3.449
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 1.571,
+     "oos_return_pct": -0.1921,
+     "oos_max_dd_pct": -0.5603,
+     "oos_trades": 0,
+     "bh_return_pct": -7.2739,
+     "bh_max_dd_pct": -9.2174
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "BTCUSDT",
+   "resolution": "1h",
+   "oos_return_pct": -3.553,
+   "oos_max_dd_pct": -3.739,
+   "oos_trades": 6,
+   "is_return_pct": 1.102,
+   "bh_return_pct": 8.196,
+   "bh_max_dd_pct": -7.776,
+   "verdict": "only 6 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "fast": 20,
+    "slow": 26,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "fast": 20,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": -1.563,
+     "oos_return_pct": 0.0399,
+     "oos_max_dd_pct": -0.0224,
+     "oos_trades": 0,
+     "bh_return_pct": 10.3046,
+     "bh_max_dd_pct": -4.5541
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "fast": 12,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": 2.501,
+     "oos_return_pct": -2.8647,
+     "oos_max_dd_pct": -3.5271,
+     "oos_trades": 4,
+     "bh_return_pct": 2.2397,
+     "bh_max_dd_pct": -3.1095
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "fast": 20,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": 2.369,
+     "oos_return_pct": -0.7902,
+     "oos_max_dd_pct": -1.271,
+     "oos_trades": 2,
+     "bh_return_pct": -5.4903,
+     "bh_max_dd_pct": -7.0162
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "BTCUSDT",
+   "resolution": "1h",
+   "oos_return_pct": 0.479,
+   "oos_max_dd_pct": -1.834,
+   "oos_trades": 3,
+   "is_return_pct": 0.7,
+   "bh_return_pct": 8.196,
+   "bh_max_dd_pct": -7.776,
+   "verdict": "only 3 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 30,
+    "high": 65,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "period": 14,
+      "low": 35,
+      "high": 65,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.46,
+     "oos_return_pct": 0.0015,
+     "oos_max_dd_pct": -0.957,
+     "oos_trades": 1,
+     "bh_return_pct": 10.3046,
+     "bh_max_dd_pct": -4.5541
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "period": 14,
+      "low": 35,
+      "high": 65,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.448,
+     "oos_return_pct": 0.722,
+     "oos_max_dd_pct": -0.6617,
+     "oos_trades": 1,
+     "bh_return_pct": 2.2397,
+     "bh_max_dd_pct": -3.1095
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "period": 14,
+      "low": 30,
+      "high": 65,
+      "size_pct": 40
+     },
+     "is_return_pct": 1.192,
+     "oos_return_pct": -0.4417,
+     "oos_max_dd_pct": -1.6901,
+     "oos_trades": 1,
+     "bh_return_pct": -5.4903,
+     "bh_max_dd_pct": -7.0162
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "BTCUSDT",
+   "resolution": "1h",
+   "oos_return_pct": -1.702,
+   "oos_max_dd_pct": -1.702,
+   "oos_trades": 21,
+   "is_return_pct": -0.085,
+   "bh_return_pct": 8.196,
+   "bh_max_dd_pct": -7.776,
+   "verdict": "only 21 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 6,
+    "range_pct": 5
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 12
+     },
+     "is_return_pct": -1.304,
+     "oos_return_pct": -0.2413,
+     "oos_max_dd_pct": -0.3395,
+     "oos_trades": 4,
+     "bh_return_pct": 10.3046,
+     "bh_max_dd_pct": -4.5541
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 12
+     },
+     "is_return_pct": -0.14,
+     "oos_return_pct": -0.2307,
+     "oos_max_dd_pct": -0.4149,
+     "oos_trades": 14,
+     "bh_return_pct": 2.2397,
+     "bh_max_dd_pct": -3.1095
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 5
+     },
+     "is_return_pct": 1.19,
+     "oos_return_pct": -1.2361,
+     "oos_max_dd_pct": -1.2361,
+     "oos_trades": 3,
+     "bh_return_pct": -5.4903,
+     "bh_max_dd_pct": -7.0162
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "BTCUSDT",
+   "resolution": "1h",
+   "oos_return_pct": 0.537,
+   "oos_max_dd_pct": -2.222,
+   "oos_trades": 3,
+   "is_return_pct": 0.734,
+   "bh_return_pct": 8.196,
+   "bh_max_dd_pct": -7.776,
+   "verdict": "only 3 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "every": 12,
+    "size_pct": 5,
+    "take_profit_pct": 3,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": -0.889,
+     "oos_return_pct": 0.7656,
+     "oos_max_dd_pct": -1.0733,
+     "oos_trades": 2,
+     "bh_return_pct": 10.3046,
+     "bh_max_dd_pct": -4.5541
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "every": 48,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 1.024,
+     "oos_return_pct": 0.4894,
+     "oos_max_dd_pct": -0.293,
+     "oos_trades": 1,
+     "bh_return_pct": 2.2397,
+     "bh_max_dd_pct": -3.1095
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 2.067,
+     "oos_return_pct": -0.9827,
+     "oos_max_dd_pct": -2.2222,
+     "oos_trades": 0,
+     "bh_return_pct": -5.4903,
+     "bh_max_dd_pct": -7.0162
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "BTCUSDT",
+   "resolution": "1h",
+   "oos_return_pct": 0.196,
+   "oos_max_dd_pct": -0.464,
+   "oos_trades": 2,
+   "is_return_pct": 0.268,
+   "bh_return_pct": 8.196,
+   "bh_max_dd_pct": -7.776,
+   "verdict": "only 2 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "pct": 3,
+    "lookback": 24,
+    "take_profit_pct": 2,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 3,
+      "size_pct": 10
+     },
+     "is_return_pct": -0.228,
+     "oos_return_pct": -0.0539,
+     "oos_max_dd_pct": -0.1729,
+     "oos_trades": 0,
+     "bh_return_pct": 10.3046,
+     "bh_max_dd_pct": -4.5541
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.578,
+     "oos_return_pct": 0.4687,
+     "oos_max_dd_pct": -0.1748,
+     "oos_trades": 2,
+     "bh_return_pct": 2.2397,
+     "bh_max_dd_pct": -3.1095
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.456,
+     "oos_return_pct": -0.2667,
+     "oos_max_dd_pct": -0.4479,
+     "oos_trades": 0,
+     "bh_return_pct": -5.4903,
+     "bh_max_dd_pct": -7.0162
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "ETHTMN",
+   "resolution": "1h",
+   "oos_return_pct": -0.764,
+   "oos_max_dd_pct": -6.656,
+   "oos_trades": 4,
+   "is_return_pct": 7.142,
+   "bh_return_pct": 17.659,
+   "bh_max_dd_pct": -15.047,
+   "verdict": "only 4 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "fast": 12,
+    "slow": 50,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "fast": 20,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": 6.082,
+     "oos_return_pct": 2.5787,
+     "oos_max_dd_pct": -3.7518,
+     "oos_trades": 2,
+     "bh_return_pct": 13.6069,
+     "bh_max_dd_pct": -4.1705
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "fast": 20,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": 4.041,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 15.762,
+     "bh_max_dd_pct": -3.3643
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "fast": 12,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": 11.304,
+     "oos_return_pct": -3.4999,
+     "oos_max_dd_pct": -4.1176,
+     "oos_trades": 2,
+     "bh_return_pct": -11.8682,
+     "bh_max_dd_pct": -14.4186
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "ETHTMN",
+   "resolution": "1h",
+   "oos_return_pct": 0.066,
+   "oos_max_dd_pct": -3.305,
+   "oos_trades": 4,
+   "is_return_pct": 0.371,
+   "bh_return_pct": 17.659,
+   "bh_max_dd_pct": -15.047,
+   "verdict": "only 4 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 25,
+    "high": 55,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "period": 14,
+      "low": 35,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.004,
+     "oos_return_pct": 1.176,
+     "oos_max_dd_pct": -0.2266,
+     "oos_trades": 1,
+     "bh_return_pct": 13.6069,
+     "bh_max_dd_pct": -4.1705
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 1.108,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 15.762,
+     "bh_max_dd_pct": -3.3643
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": -1.0976,
+     "oos_max_dd_pct": -3.2685,
+     "oos_trades": 3,
+     "bh_return_pct": -11.8682,
+     "bh_max_dd_pct": -14.4186
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "ETHTMN",
+   "resolution": "1h",
+   "oos_return_pct": -2.976,
+   "oos_max_dd_pct": -2.999,
+   "oos_trades": 14,
+   "is_return_pct": 0.646,
+   "bh_return_pct": 17.659,
+   "bh_max_dd_pct": -15.047,
+   "verdict": "only 14 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 6,
+    "range_pct": 8
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 12
+     },
+     "is_return_pct": 0.302,
+     "oos_return_pct": -0.1823,
+     "oos_max_dd_pct": -0.4194,
+     "oos_trades": 7,
+     "bh_return_pct": 13.6069,
+     "bh_max_dd_pct": -4.1705
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 12
+     },
+     "is_return_pct": 1.538,
+     "oos_return_pct": 0.0856,
+     "oos_max_dd_pct": -0.071,
+     "oos_trades": 6,
+     "bh_return_pct": 15.762,
+     "bh_max_dd_pct": -3.3643
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 8
+     },
+     "is_return_pct": 0.099,
+     "oos_return_pct": -2.8815,
+     "oos_max_dd_pct": -2.8816,
+     "oos_trades": 1,
+     "bh_return_pct": -11.8682,
+     "bh_max_dd_pct": -14.4186
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "ETHTMN",
+   "resolution": "1h",
+   "oos_return_pct": 0.479,
+   "oos_max_dd_pct": -4.126,
+   "oos_trades": 4,
+   "is_return_pct": 5.809,
+   "bh_return_pct": 17.659,
+   "bh_max_dd_pct": -15.047,
+   "verdict": "only 4 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "every": 12,
+    "size_pct": 5,
+    "take_profit_pct": 6,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "every": 24,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 5.535,
+     "oos_return_pct": 1.3196,
+     "oos_max_dd_pct": -0.8705,
+     "oos_trades": 1,
+     "bh_return_pct": 13.6069,
+     "bh_max_dd_pct": -4.1705
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "every": 24,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 4.231,
+     "oos_return_pct": 2.276,
+     "oos_max_dd_pct": -0.6303,
+     "oos_trades": 1,
+     "bh_return_pct": 15.762,
+     "bh_max_dd_pct": -3.3643
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 7.66,
+     "oos_return_pct": -3.2937,
+     "oos_max_dd_pct": -4.0888,
+     "oos_trades": 2,
+     "bh_return_pct": -11.8682,
+     "bh_max_dd_pct": -14.4186
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "ETHTMN",
+   "resolution": "1h",
+   "oos_return_pct": 1.101,
+   "oos_max_dd_pct": -0.948,
+   "oos_trades": 6,
+   "is_return_pct": 1.952,
+   "bh_return_pct": 17.659,
+   "bh_max_dd_pct": -15.047,
+   "verdict": "only 6 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "pct": 3,
+    "lookback": 24,
+    "take_profit_pct": 5,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 1.879,
+     "oos_return_pct": 0.6492,
+     "oos_max_dd_pct": -0.3916,
+     "oos_trades": 1,
+     "bh_return_pct": 13.6069,
+     "bh_max_dd_pct": -4.1705
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 1.959,
+     "oos_return_pct": 1.0007,
+     "oos_max_dd_pct": -0.3392,
+     "oos_trades": 2,
+     "bh_return_pct": 15.762,
+     "bh_max_dd_pct": -3.3643
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 2.019,
+     "oos_return_pct": -0.597,
+     "oos_max_dd_pct": -0.9383,
+     "oos_trades": 3,
+     "bh_return_pct": -11.8682,
+     "bh_max_dd_pct": -14.4186
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "ETHUSDT",
+   "resolution": "1h",
+   "oos_return_pct": 1.32,
+   "oos_max_dd_pct": -4.285,
+   "oos_trades": 20,
+   "is_return_pct": 0.505,
+   "bh_return_pct": 2.269,
+   "bh_max_dd_pct": -15.818,
+   "verdict": "only 20 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "fast": 8,
+    "slow": 26,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": -0.769,
+     "oos_return_pct": 3.3941,
+     "oos_max_dd_pct": -1.9232,
+     "oos_trades": 6,
+     "bh_return_pct": 11.6752,
+     "bh_max_dd_pct": -5.3592
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": 0.995,
+     "oos_return_pct": -2.0154,
+     "oos_max_dd_pct": -2.1577,
+     "oos_trades": 9,
+     "bh_return_pct": 0.5973,
+     "bh_max_dd_pct": -3.3468
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": 1.289,
+     "oos_return_pct": -0.2976,
+     "oos_max_dd_pct": -1.8185,
+     "oos_trades": 5,
+     "bh_return_pct": -10.3232,
+     "bh_max_dd_pct": -13.6853
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "ETHUSDT",
+   "resolution": "1h",
+   "oos_return_pct": -3.737,
+   "oos_max_dd_pct": -5.837,
+   "oos_trades": 6,
+   "is_return_pct": 4.694,
+   "bh_return_pct": 2.269,
+   "bh_max_dd_pct": -15.818,
+   "verdict": "only 6 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 35,
+    "high": 65,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "period": 14,
+      "low": 30,
+      "high": 65,
+      "size_pct": 40
+     },
+     "is_return_pct": 5.783,
+     "oos_return_pct": -0.1233,
+     "oos_max_dd_pct": -0.8366,
+     "oos_trades": 0,
+     "bh_return_pct": 11.6752,
+     "bh_max_dd_pct": -5.3592
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "period": 14,
+      "low": 30,
+      "high": 65,
+      "size_pct": 40
+     },
+     "is_return_pct": 4.856,
+     "oos_return_pct": 0.8091,
+     "oos_max_dd_pct": -0.5091,
+     "oos_trades": 1,
+     "bh_return_pct": 0.5973,
+     "bh_max_dd_pct": -3.3468
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "period": 14,
+      "low": 35,
+      "high": 65,
+      "size_pct": 40
+     },
+     "is_return_pct": 3.443,
+     "oos_return_pct": -4.5611,
+     "oos_max_dd_pct": -5.7224,
+     "oos_trades": 5,
+     "bh_return_pct": -10.3232,
+     "bh_max_dd_pct": -13.6853
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "ETHUSDT",
+   "resolution": "1h",
+   "oos_return_pct": -2.023,
+   "oos_max_dd_pct": -2.192,
+   "oos_trades": 20,
+   "is_return_pct": -0.169,
+   "bh_return_pct": 2.269,
+   "bh_max_dd_pct": -15.818,
+   "verdict": "only 20 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 10,
+    "range_pct": 5
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 12
+     },
+     "is_return_pct": -1.593,
+     "oos_return_pct": 0.0526,
+     "oos_max_dd_pct": -0.1182,
+     "oos_trades": 3,
+     "bh_return_pct": 11.6752,
+     "bh_max_dd_pct": -5.3592
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 12
+     },
+     "is_return_pct": 0.263,
+     "oos_return_pct": -0.3029,
+     "oos_max_dd_pct": -0.693,
+     "oos_trades": 14,
+     "bh_return_pct": 0.5973,
+     "bh_max_dd_pct": -3.3468
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 5
+     },
+     "is_return_pct": 0.824,
+     "oos_return_pct": -1.8185,
+     "oos_max_dd_pct": -1.8512,
+     "oos_trades": 3,
+     "bh_return_pct": -10.3232,
+     "bh_max_dd_pct": -13.6853
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "ETHUSDT",
+   "resolution": "1h",
+   "oos_return_pct": -3.517,
+   "oos_max_dd_pct": -5.209,
+   "oos_trades": 4,
+   "is_return_pct": 2.609,
+   "bh_return_pct": 2.269,
+   "bh_max_dd_pct": -15.818,
+   "verdict": "only 4 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "every": 12,
+    "size_pct": 5,
+    "take_profit_pct": 3,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "every": 48,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 1.974,
+     "oos_return_pct": 0.5027,
+     "oos_max_dd_pct": -0.2723,
+     "oos_trades": 2,
+     "bh_return_pct": 11.6752,
+     "bh_max_dd_pct": -5.3592
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 4.223,
+     "oos_return_pct": 0.3777,
+     "oos_max_dd_pct": -1.4135,
+     "oos_trades": 0,
+     "bh_return_pct": 0.5973,
+     "bh_max_dd_pct": -3.3468
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 1.63,
+     "oos_return_pct": -4.5211,
+     "oos_max_dd_pct": -4.7048,
+     "oos_trades": 2,
+     "bh_return_pct": -10.3232,
+     "bh_max_dd_pct": -13.6853
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "ETHUSDT",
+   "resolution": "1h",
+   "oos_return_pct": -0.559,
+   "oos_max_dd_pct": -1.291,
+   "oos_trades": 6,
+   "is_return_pct": 0.613,
+   "bh_return_pct": 2.269,
+   "bh_max_dd_pct": -15.818,
+   "verdict": "only 6 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "pct": 3,
+    "lookback": 24,
+    "take_profit_pct": 2,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-08-27",
+      "2026-09-16"
+     ],
+     "test": [
+      "2026-09-16",
+      "2026-09-26"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.176,
+     "oos_return_pct": 0.1727,
+     "oos_max_dd_pct": -0.2256,
+     "oos_trades": 1,
+     "bh_return_pct": 11.6752,
+     "bh_max_dd_pct": -5.3592
+    },
+    {
+     "train": [
+      "2026-09-06",
+      "2026-09-26"
+     ],
+     "test": [
+      "2026-09-26",
+      "2026-10-06"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 1.163,
+     "oos_return_pct": 0.1054,
+     "oos_max_dd_pct": -0.1475,
+     "oos_trades": 0,
+     "bh_return_pct": 0.5973,
+     "bh_max_dd_pct": -3.3468
+    },
+    {
+     "train": [
+      "2026-09-16",
+      "2026-10-06"
+     ],
+     "test": [
+      "2026-10-06",
+      "2026-10-16"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.501,
+     "oos_return_pct": -0.8851,
+     "oos_max_dd_pct": -1.2416,
+     "oos_trades": 5,
+     "bh_return_pct": -10.3232,
+     "bh_max_dd_pct": -13.6853
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "USDTTMN",
+   "resolution": "4h",
+   "oos_return_pct": -1.148,
+   "oos_max_dd_pct": -1.4,
+   "oos_trades": 1,
+   "is_return_pct": 3.575,
+   "bh_return_pct": 3.81,
+   "bh_max_dd_pct": -5.413,
+   "verdict": "only 1 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "fast": 8,
+    "slow": 50,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": 1.287,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 6.2408,
+     "bh_max_dd_pct": -1.851
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-19"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": 5.864,
+     "oos_return_pct": -1.1479,
+     "oos_max_dd_pct": -1.4001,
+     "oos_trades": 1,
+     "bh_return_pct": -3.2614,
+     "bh_max_dd_pct": -4.7851
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "USDTTMN",
+   "resolution": "4h",
+   "oos_return_pct": 0.995,
+   "oos_max_dd_pct": -0.305,
+   "oos_trades": 1,
+   "is_return_pct": 0.0,
+   "bh_return_pct": 3.81,
+   "bh_max_dd_pct": -5.413,
+   "verdict": "only 1 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 25,
+    "high": 55,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 6.2408,
+     "bh_max_dd_pct": -1.851
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-19"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.9951,
+     "oos_max_dd_pct": -0.3047,
+     "oos_trades": 1,
+     "bh_return_pct": -3.2614,
+     "bh_max_dd_pct": -4.7851
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "USDTTMN",
+   "resolution": "4h",
+   "oos_return_pct": -0.296,
+   "oos_max_dd_pct": -1.481,
+   "oos_trades": 12,
+   "is_return_pct": 1.542,
+   "bh_return_pct": 3.81,
+   "bh_max_dd_pct": -5.413,
+   "verdict": "only 12 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 10,
+    "range_pct": 5
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 5
+     },
+     "is_return_pct": 1.187,
+     "oos_return_pct": 0.1192,
+     "oos_max_dd_pct": -0.1056,
+     "oos_trades": 4,
+     "bh_return_pct": 6.2408,
+     "bh_max_dd_pct": -1.851
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-19"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 5
+     },
+     "is_return_pct": 1.896,
+     "oos_return_pct": -0.4151,
+     "oos_max_dd_pct": -1.4517,
+     "oos_trades": 8,
+     "bh_return_pct": -3.2614,
+     "bh_max_dd_pct": -4.7851
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "USDTTMN",
+   "resolution": "4h",
+   "oos_return_pct": 0.093,
+   "oos_max_dd_pct": -0.432,
+   "oos_trades": 1,
+   "is_return_pct": 1.306,
+   "bh_return_pct": 3.81,
+   "bh_max_dd_pct": -5.413,
+   "verdict": "only 1 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "every": 24,
+    "size_pct": 5,
+    "take_profit_pct": 6,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 1.495,
+     "oos_return_pct": 0.2295,
+     "oos_max_dd_pct": -0.2883,
+     "oos_trades": 1,
+     "bh_return_pct": 6.2408,
+     "bh_max_dd_pct": -1.851
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-19"
+     ],
+     "params": {
+      "every": 24,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 1.117,
+     "oos_return_pct": -0.2107,
+     "oos_max_dd_pct": -0.352,
+     "oos_trades": 0,
+     "bh_return_pct": -3.2614,
+     "bh_max_dd_pct": -4.7851
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "USDTTMN",
+   "resolution": "4h",
+   "oos_return_pct": 0.219,
+   "oos_max_dd_pct": -0.076,
+   "oos_trades": 1,
+   "is_return_pct": 0.0,
+   "bh_return_pct": 3.81,
+   "bh_max_dd_pct": -5.413,
+   "verdict": "only 1 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "pct": 3,
+    "lookback": 24,
+    "take_profit_pct": 2,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 6.2408,
+     "bh_max_dd_pct": -1.851
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-19"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.1936,
+     "oos_max_dd_pct": -0.0762,
+     "oos_trades": 1,
+     "bh_return_pct": -3.2614,
+     "bh_max_dd_pct": -4.7851
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "BTCTMN",
+   "resolution": "4h",
+   "oos_return_pct": -1.508,
+   "oos_max_dd_pct": -1.508,
+   "oos_trades": 1,
+   "is_return_pct": 0.0,
+   "bh_return_pct": 1.958,
+   "bh_max_dd_pct": -10.339,
+   "verdict": "only 1 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "fast": 8,
+    "slow": 26,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 4.899,
+     "bh_max_dd_pct": -6.7317
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": -1.5077,
+     "oos_max_dd_pct": -1.5077,
+     "oos_trades": 1,
+     "bh_return_pct": -3.7723,
+     "bh_max_dd_pct": -5.7274
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "BTCTMN",
+   "resolution": "4h",
+   "oos_return_pct": 0.0,
+   "oos_max_dd_pct": 0.0,
+   "oos_trades": 0,
+   "is_return_pct": 0.0,
+   "bh_return_pct": 1.958,
+   "bh_max_dd_pct": -10.339,
+   "verdict": "only 0 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 25,
+    "high": 55,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 4.899,
+     "bh_max_dd_pct": -6.7317
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": -3.7723,
+     "bh_max_dd_pct": -5.7274
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "BTCTMN",
+   "resolution": "4h",
+   "oos_return_pct": -0.972,
+   "oos_max_dd_pct": -1.212,
+   "oos_trades": 12,
+   "is_return_pct": 1.352,
+   "bh_return_pct": 1.958,
+   "bh_max_dd_pct": -10.339,
+   "verdict": "only 12 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 6,
+    "range_pct": 5
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 8
+     },
+     "is_return_pct": 1.815,
+     "oos_return_pct": 0.0617,
+     "oos_max_dd_pct": -0.0571,
+     "oos_trades": 3,
+     "bh_return_pct": 4.899,
+     "bh_max_dd_pct": -6.7317
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 5
+     },
+     "is_return_pct": 0.889,
+     "oos_return_pct": -1.033,
+     "oos_max_dd_pct": -1.1625,
+     "oos_trades": 9,
+     "bh_return_pct": -3.7723,
+     "bh_max_dd_pct": -5.7274
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "BTCTMN",
+   "resolution": "4h",
+   "oos_return_pct": -0.641,
+   "oos_max_dd_pct": -1.465,
+   "oos_trades": 3,
+   "is_return_pct": 1.496,
+   "bh_return_pct": 1.958,
+   "bh_max_dd_pct": -10.339,
+   "verdict": "only 3 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "every": 12,
+    "size_pct": 5,
+    "take_profit_pct": 6,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 1.471,
+     "oos_return_pct": -0.1059,
+     "oos_max_dd_pct": -0.5946,
+     "oos_trades": 3,
+     "bh_return_pct": 4.899,
+     "bh_max_dd_pct": -6.7317
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 1.522,
+     "oos_return_pct": -0.5965,
+     "oos_max_dd_pct": -1.0152,
+     "oos_trades": 0,
+     "bh_return_pct": -3.7723,
+     "bh_max_dd_pct": -5.7274
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "BTCTMN",
+   "resolution": "4h",
+   "oos_return_pct": 0.397,
+   "oos_max_dd_pct": -0.894,
+   "oos_trades": 2,
+   "is_return_pct": 1.213,
+   "bh_return_pct": 1.958,
+   "bh_max_dd_pct": -10.339,
+   "verdict": "only 2 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "pct": 3,
+    "lookback": 24,
+    "take_profit_pct": 5,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 1.187,
+     "oos_return_pct": 0.7171,
+     "oos_max_dd_pct": -0.4967,
+     "oos_trades": 2,
+     "bh_return_pct": 4.899,
+     "bh_max_dd_pct": -6.7317
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 1.239,
+     "oos_return_pct": -0.3663,
+     "oos_max_dd_pct": -0.5773,
+     "oos_trades": 0,
+     "bh_return_pct": -3.7723,
+     "bh_max_dd_pct": -5.7274
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "BTCUSDT",
+   "resolution": "4h",
+   "oos_return_pct": -2.233,
+   "oos_max_dd_pct": -3.443,
+   "oos_trades": 3,
+   "is_return_pct": 0.811,
+   "bh_return_pct": -2.508,
+   "bh_max_dd_pct": -7.514,
+   "verdict": "only 3 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "fast": 8,
+    "slow": 26,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": 1.622,
+     "oos_return_pct": -0.2302,
+     "oos_max_dd_pct": -1.4645,
+     "oos_trades": 1,
+     "bh_return_pct": -2.5265,
+     "bh_max_dd_pct": -6.3018
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": -2.0076,
+     "oos_max_dd_pct": -2.2114,
+     "oos_trades": 2,
+     "bh_return_pct": -0.977,
+     "bh_max_dd_pct": -3.5459
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "BTCUSDT",
+   "resolution": "4h",
+   "oos_return_pct": -1.152,
+   "oos_max_dd_pct": -1.343,
+   "oos_trades": 0,
+   "is_return_pct": 0.446,
+   "bh_return_pct": -2.508,
+   "bh_max_dd_pct": -7.514,
+   "verdict": "only 0 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 25,
+    "high": 55,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "period": 14,
+      "low": 35,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.892,
+     "oos_return_pct": -1.2495,
+     "oos_max_dd_pct": -1.3433,
+     "oos_trades": 0,
+     "bh_return_pct": -2.5265,
+     "bh_max_dd_pct": -6.3018
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": -0.977,
+     "bh_max_dd_pct": -3.5459
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "BTCUSDT",
+   "resolution": "4h",
+   "oos_return_pct": -0.936,
+   "oos_max_dd_pct": -2.449,
+   "oos_trades": 14,
+   "is_return_pct": 0.531,
+   "bh_return_pct": -2.508,
+   "bh_max_dd_pct": -7.514,
+   "verdict": "only 14 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 6,
+    "range_pct": 5
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 12
+     },
+     "is_return_pct": 0.371,
+     "oos_return_pct": -1.2714,
+     "oos_max_dd_pct": -1.6296,
+     "oos_trades": 5,
+     "bh_return_pct": -2.5265,
+     "bh_max_dd_pct": -6.3018
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 5
+     },
+     "is_return_pct": 0.69,
+     "oos_return_pct": 0.0405,
+     "oos_max_dd_pct": -1.648,
+     "oos_trades": 9,
+     "bh_return_pct": -0.977,
+     "bh_max_dd_pct": -3.5459
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "BTCUSDT",
+   "resolution": "4h",
+   "oos_return_pct": -0.498,
+   "oos_max_dd_pct": -1.236,
+   "oos_trades": 1,
+   "is_return_pct": 0.503,
+   "bh_return_pct": -2.508,
+   "bh_max_dd_pct": -7.514,
+   "verdict": "only 1 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "every": 12,
+    "size_pct": 5,
+    "take_profit_pct": 3,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 1.007,
+     "oos_return_pct": -0.3899,
+     "oos_max_dd_pct": -0.8405,
+     "oos_trades": 1,
+     "bh_return_pct": -2.5265,
+     "bh_max_dd_pct": -6.3018
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": -0.2071,
+     "oos_max_dd_pct": -0.6088,
+     "oos_trades": 0,
+     "bh_return_pct": -0.977,
+     "bh_max_dd_pct": -3.5459
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "BTCUSDT",
+   "resolution": "4h",
+   "oos_return_pct": -0.257,
+   "oos_max_dd_pct": -0.613,
+   "oos_trades": 1,
+   "is_return_pct": 0.012,
+   "bh_return_pct": -2.508,
+   "bh_max_dd_pct": -7.514,
+   "verdict": "only 1 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "pct": 3,
+    "lookback": 24,
+    "take_profit_pct": 2,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": -0.2029,
+     "oos_max_dd_pct": -0.4541,
+     "oos_trades": 1,
+     "bh_return_pct": -2.5265,
+     "bh_max_dd_pct": -6.3018
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.024,
+     "oos_return_pct": -0.1027,
+     "oos_max_dd_pct": -0.3596,
+     "oos_trades": 0,
+     "bh_return_pct": -0.977,
+     "bh_max_dd_pct": -3.5459
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "ETHTMN",
+   "resolution": "4h",
+   "oos_return_pct": 0.0,
+   "oos_max_dd_pct": 0.0,
+   "oos_trades": 0,
+   "is_return_pct": 2.519,
+   "bh_return_pct": -7.009,
+   "bh_max_dd_pct": -17.911,
+   "verdict": "only 0 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "fast": 8,
+    "slow": 26,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": 5.037,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": -1.0285,
+     "bh_max_dd_pct": -11.0298
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": -6.979,
+     "bh_max_dd_pct": -10.3647
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "ETHTMN",
+   "resolution": "4h",
+   "oos_return_pct": 0.485,
+   "oos_max_dd_pct": 0.0,
+   "oos_trades": 0,
+   "is_return_pct": 0.0,
+   "bh_return_pct": -7.009,
+   "bh_max_dd_pct": -17.911,
+   "verdict": "only 0 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 25,
+    "high": 55,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.3833,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": -1.0285,
+     "bh_max_dd_pct": -11.0298
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": -6.979,
+     "bh_max_dd_pct": -10.3647
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "ETHTMN",
+   "resolution": "4h",
+   "oos_return_pct": -1.621,
+   "oos_max_dd_pct": -2.361,
+   "oos_trades": 16,
+   "is_return_pct": 1.979,
+   "bh_return_pct": -7.009,
+   "bh_max_dd_pct": -17.911,
+   "verdict": "only 16 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 6,
+    "range_pct": 12
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 8
+     },
+     "is_return_pct": 3.049,
+     "oos_return_pct": -0.5044,
+     "oos_max_dd_pct": -1.0241,
+     "oos_trades": 8,
+     "bh_return_pct": -1.0285,
+     "bh_max_dd_pct": -11.0298
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 12
+     },
+     "is_return_pct": 0.91,
+     "oos_return_pct": -1.2122,
+     "oos_max_dd_pct": -1.692,
+     "oos_trades": 8,
+     "bh_return_pct": -6.979,
+     "bh_max_dd_pct": -10.3647
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "ETHTMN",
+   "resolution": "4h",
+   "oos_return_pct": -1.103,
+   "oos_max_dd_pct": -1.254,
+   "oos_trades": 4,
+   "is_return_pct": 0.757,
+   "bh_return_pct": -7.009,
+   "bh_max_dd_pct": -17.911,
+   "verdict": "only 4 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "every": 24,
+    "size_pct": 5,
+    "take_profit_pct": 6,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "every": 48,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 0.665,
+     "oos_return_pct": -0.2671,
+     "oos_max_dd_pct": -0.42,
+     "oos_trades": 2,
+     "bh_return_pct": -1.0285,
+     "bh_max_dd_pct": -11.0298
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "every": 24,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 0.85,
+     "oos_return_pct": -0.8378,
+     "oos_max_dd_pct": -0.892,
+     "oos_trades": 2,
+     "bh_return_pct": -6.979,
+     "bh_max_dd_pct": -10.3647
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "ETHTMN",
+   "resolution": "4h",
+   "oos_return_pct": -1.413,
+   "oos_max_dd_pct": -2.422,
+   "oos_trades": 4,
+   "is_return_pct": 1.28,
+   "bh_return_pct": -7.009,
+   "bh_max_dd_pct": -17.911,
+   "verdict": "only 4 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "pct": 3,
+    "lookback": 24,
+    "take_profit_pct": 5,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 1.608,
+     "oos_return_pct": -0.1748,
+     "oos_max_dd_pct": -1.1789,
+     "oos_trades": 2,
+     "bh_return_pct": -1.0285,
+     "bh_max_dd_pct": -11.0298
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.951,
+     "oos_return_pct": -1.2647,
+     "oos_max_dd_pct": -1.3726,
+     "oos_trades": 2,
+     "bh_return_pct": -6.979,
+     "bh_max_dd_pct": -10.3647
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "ETHUSDT",
+   "resolution": "4h",
+   "oos_return_pct": -3.53,
+   "oos_max_dd_pct": -3.53,
+   "oos_trades": 4,
+   "is_return_pct": -0.827,
+   "bh_return_pct": -9.934,
+   "bh_max_dd_pct": -15.149,
+   "verdict": "only 4 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "fast": 20,
+    "slow": 26,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": 0.903,
+     "oos_return_pct": -3.5304,
+     "oos_max_dd_pct": -3.5304,
+     "oos_trades": 4,
+     "bh_return_pct": -7.2501,
+     "bh_max_dd_pct": -11.1114
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "fast": 20,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": -2.557,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": -3.8616,
+     "bh_max_dd_pct": -9.0069
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "ETHUSDT",
+   "resolution": "4h",
+   "oos_return_pct": -2.101,
+   "oos_max_dd_pct": -2.207,
+   "oos_trades": 1,
+   "is_return_pct": 0.0,
+   "bh_return_pct": -9.934,
+   "bh_max_dd_pct": -15.149,
+   "verdict": "only 1 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 25,
+    "high": 55,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": -2.199,
+     "oos_max_dd_pct": -2.207,
+     "oos_trades": 1,
+     "bh_return_pct": -7.2501,
+     "bh_max_dd_pct": -11.1114
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": -3.8616,
+     "bh_max_dd_pct": -9.0069
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "ETHUSDT",
+   "resolution": "4h",
+   "oos_return_pct": -4.826,
+   "oos_max_dd_pct": -4.946,
+   "oos_trades": 20,
+   "is_return_pct": -0.042,
+   "bh_return_pct": -9.934,
+   "bh_max_dd_pct": -15.149,
+   "verdict": "only 20 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 10,
+    "range_pct": 5
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 12
+     },
+     "is_return_pct": 1.597,
+     "oos_return_pct": -2.9958,
+     "oos_max_dd_pct": -3.0586,
+     "oos_trades": 8,
+     "bh_return_pct": -7.2501,
+     "bh_max_dd_pct": -11.1114
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 5
+     },
+     "is_return_pct": -1.681,
+     "oos_return_pct": -1.8869,
+     "oos_max_dd_pct": -1.9964,
+     "oos_trades": 12,
+     "bh_return_pct": -3.8616,
+     "bh_max_dd_pct": -9.0069
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "ETHUSDT",
+   "resolution": "4h",
+   "oos_return_pct": -1.803,
+   "oos_max_dd_pct": -2.163,
+   "oos_trades": 2,
+   "is_return_pct": 0.34,
+   "bh_return_pct": -9.934,
+   "bh_max_dd_pct": -15.149,
+   "verdict": "only 2 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "every": 48,
+    "size_pct": 5,
+    "take_profit_pct": 6,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 0.919,
+     "oos_return_pct": -1.4343,
+     "oos_max_dd_pct": -1.6552,
+     "oos_trades": 1,
+     "bh_return_pct": -7.2501,
+     "bh_max_dd_pct": -11.1114
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "every": 48,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": -0.239,
+     "oos_return_pct": -0.3863,
+     "oos_max_dd_pct": -0.6518,
+     "oos_trades": 1,
+     "bh_return_pct": -3.8616,
+     "bh_max_dd_pct": -9.0069
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "ETHUSDT",
+   "resolution": "4h",
+   "oos_return_pct": -0.329,
+   "oos_max_dd_pct": -0.788,
+   "oos_trades": 2,
+   "is_return_pct": 0.293,
+   "bh_return_pct": -9.934,
+   "bh_max_dd_pct": -15.149,
+   "verdict": "only 2 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "pct": 5,
+    "lookback": 24,
+    "take_profit_pct": 2,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2026-09-09",
+      "2026-09-28"
+     ],
+     "test": [
+      "2026-09-29",
+      "2026-10-08"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.999,
+     "oos_return_pct": -0.4413,
+     "oos_max_dd_pct": -0.7409,
+     "oos_trades": 1,
+     "bh_return_pct": -7.2501,
+     "bh_max_dd_pct": -11.1114
+    },
+    {
+     "train": [
+      "2026-09-19",
+      "2026-10-08"
+     ],
+     "test": [
+      "2026-10-09",
+      "2026-10-18"
+     ],
+     "params": {
+      "pct": 5,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": -0.413,
+     "oos_return_pct": 0.0628,
+     "oos_max_dd_pct": -0.5145,
+     "oos_trades": 1,
+     "bh_return_pct": -3.8616,
+     "bh_max_dd_pct": -9.0069
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "USDTTMN",
+   "resolution": "1d",
+   "oos_return_pct": 4.597,
+   "oos_max_dd_pct": -8.018,
+   "oos_trades": 3,
+   "is_return_pct": -3.6,
+   "bh_return_pct": 25.598,
+   "bh_max_dd_pct": -18.9,
+   "verdict": "only 3 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "fast": 8,
+    "slow": 26,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "fast": 12,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": -3.642,
+     "oos_return_pct": -1.5186,
+     "oos_max_dd_pct": -8.0181,
+     "oos_trades": 2,
+     "bh_return_pct": 6.5517,
+     "bh_max_dd_pct": -18.8997
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": -3.557,
+     "oos_return_pct": 6.0749,
+     "oos_max_dd_pct": -3.0177,
+     "oos_trades": 1,
+     "bh_return_pct": 16.7005,
+     "bh_max_dd_pct": -4.7795
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "USDTTMN",
+   "resolution": "1d",
+   "oos_return_pct": 1.485,
+   "oos_max_dd_pct": -1.606,
+   "oos_trades": 0,
+   "is_return_pct": 2.29,
+   "bh_return_pct": 25.598,
+   "bh_max_dd_pct": -18.9,
+   "verdict": "only 0 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 35,
+    "high": 65,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "period": 14,
+      "low": 35,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.431,
+     "oos_return_pct": 1.3813,
+     "oos_max_dd_pct": -1.6064,
+     "oos_trades": 0,
+     "bh_return_pct": 6.5517,
+     "bh_max_dd_pct": -18.8997
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "period": 14,
+      "low": 35,
+      "high": 65,
+      "size_pct": 40
+     },
+     "is_return_pct": 4.149,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 16.7005,
+     "bh_max_dd_pct": -4.7795
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "USDTTMN",
+   "resolution": "1d",
+   "oos_return_pct": 0.692,
+   "oos_max_dd_pct": -0.551,
+   "oos_trades": 4,
+   "is_return_pct": -0.04,
+   "bh_return_pct": 25.598,
+   "bh_max_dd_pct": -18.9,
+   "verdict": "only 4 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "levels": 10,
+    "range_pct": 5
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 12
+     },
+     "is_return_pct": 0.609,
+     "oos_return_pct": 0.6075,
+     "oos_max_dd_pct": -0.5509,
+     "oos_trades": 3,
+     "bh_return_pct": 6.5517,
+     "bh_max_dd_pct": -18.8997
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 5
+     },
+     "is_return_pct": -0.69,
+     "oos_return_pct": 0.0836,
+     "oos_max_dd_pct": -0.0303,
+     "oos_trades": 1,
+     "bh_return_pct": 16.7005,
+     "bh_max_dd_pct": -4.7795
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "USDTTMN",
+   "resolution": "1d",
+   "oos_return_pct": 0.05,
+   "oos_max_dd_pct": -0.768,
+   "oos_trades": 4,
+   "is_return_pct": 0.197,
+   "bh_return_pct": 25.598,
+   "bh_max_dd_pct": -18.9,
+   "verdict": "only 4 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "every": 48,
+    "size_pct": 5,
+    "take_profit_pct": 3,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "every": 24,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 0.369,
+     "oos_return_pct": -0.3682,
+     "oos_max_dd_pct": -0.7005,
+     "oos_trades": 3,
+     "bh_return_pct": 6.5517,
+     "bh_max_dd_pct": -18.8997
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "every": 48,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 0.024,
+     "oos_return_pct": 0.4067,
+     "oos_max_dd_pct": -0.0736,
+     "oos_trades": 1,
+     "bh_return_pct": 16.7005,
+     "bh_max_dd_pct": -4.7795
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "USDTTMN",
+   "resolution": "1d",
+   "oos_return_pct": -0.276,
+   "oos_max_dd_pct": -1.32,
+   "oos_trades": 6,
+   "is_return_pct": 1.429,
+   "bh_return_pct": 25.598,
+   "bh_max_dd_pct": -18.9,
+   "verdict": "only 6 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "pct": 8,
+    "lookback": 24,
+    "take_profit_pct": 5,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "pct": 5,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": 1.809,
+     "oos_return_pct": -0.7455,
+     "oos_max_dd_pct": -1.3202,
+     "oos_trades": 5,
+     "bh_return_pct": 6.5517,
+     "bh_max_dd_pct": -18.8997
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "pct": 8,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 1.049,
+     "oos_return_pct": 0.4727,
+     "oos_max_dd_pct": -0.0405,
+     "oos_trades": 1,
+     "bh_return_pct": 16.7005,
+     "bh_max_dd_pct": -4.7795
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "BTCTMN",
+   "resolution": "1d",
+   "oos_return_pct": 11.035,
+   "oos_max_dd_pct": -3.933,
+   "oos_trades": 1,
+   "is_return_pct": 2.536,
+   "bh_return_pct": 27.214,
+   "bh_max_dd_pct": -33.616,
+   "verdict": "only 1 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "fast": 12,
+    "slow": 26,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": -2.36,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": -17.0044,
+     "bh_max_dd_pct": -33.6164
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "fast": 12,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": 7.432,
+     "oos_return_pct": 10.8852,
+     "oos_max_dd_pct": -3.9332,
+     "oos_trades": 1,
+     "bh_return_pct": 51.7508,
+     "bh_max_dd_pct": -7.7406
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "BTCTMN",
+   "resolution": "1d",
+   "oos_return_pct": -3.249,
+   "oos_max_dd_pct": -3.753,
+   "oos_trades": 1,
+   "is_return_pct": -2.612,
+   "bh_return_pct": 27.214,
+   "bh_max_dd_pct": -33.616,
+   "verdict": "only 1 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 30,
+    "high": 55,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": -3.2485,
+     "oos_max_dd_pct": -3.753,
+     "oos_trades": 1,
+     "bh_return_pct": -17.0044,
+     "bh_max_dd_pct": -33.6164
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "period": 14,
+      "low": 30,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": -5.224,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 51.7508,
+     "bh_max_dd_pct": -7.7406
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "BTCTMN",
+   "resolution": "1d",
+   "oos_return_pct": -1.751,
+   "oos_max_dd_pct": -2.751,
+   "oos_trades": 5,
+   "is_return_pct": -1.786,
+   "bh_return_pct": 27.214,
+   "bh_max_dd_pct": -33.616,
+   "verdict": "only 5 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 6,
+    "range_pct": 5
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 12
+     },
+     "is_return_pct": -0.828,
+     "oos_return_pct": -2.305,
+     "oos_max_dd_pct": -2.7512,
+     "oos_trades": 3,
+     "bh_return_pct": -17.0044,
+     "bh_max_dd_pct": -33.6164
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 5
+     },
+     "is_return_pct": -2.743,
+     "oos_return_pct": 0.5674,
+     "oos_max_dd_pct": -0.0513,
+     "oos_trades": 2,
+     "bh_return_pct": 51.7508,
+     "bh_max_dd_pct": -7.7406
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "BTCTMN",
+   "resolution": "1d",
+   "oos_return_pct": 0.797,
+   "oos_max_dd_pct": -0.981,
+   "oos_trades": 6,
+   "is_return_pct": 0.483,
+   "bh_return_pct": 27.214,
+   "bh_max_dd_pct": -33.616,
+   "verdict": "only 6 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "every": 12,
+    "size_pct": 5,
+    "take_profit_pct": 3,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "every": 24,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": 1.151,
+     "oos_return_pct": -0.575,
+     "oos_max_dd_pct": -0.7581,
+     "oos_trades": 3,
+     "bh_return_pct": -17.0044,
+     "bh_max_dd_pct": -33.6164
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 3,
+      "max_entries": 10
+     },
+     "is_return_pct": -0.186,
+     "oos_return_pct": 1.38,
+     "oos_max_dd_pct": -0.7555,
+     "oos_trades": 3,
+     "bh_return_pct": 51.7508,
+     "bh_max_dd_pct": -7.7406
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "BTCTMN",
+   "resolution": "1d",
+   "oos_return_pct": -2.085,
+   "oos_max_dd_pct": -3.084,
+   "oos_trades": 6,
+   "is_return_pct": -1.365,
+   "bh_return_pct": 27.214,
+   "bh_max_dd_pct": -33.616,
+   "verdict": "only 6 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "pct": 8,
+    "lookback": 24,
+    "take_profit_pct": 5,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "pct": 8,
+      "lookback": 24,
+      "take_profit_pct": 3,
+      "size_pct": 10
+     },
+     "is_return_pct": -1.313,
+     "oos_return_pct": -2.8597,
+     "oos_max_dd_pct": -3.0839,
+     "oos_trades": 5,
+     "bh_return_pct": -17.0044,
+     "bh_max_dd_pct": -33.6164
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "pct": 8,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": -1.416,
+     "oos_return_pct": 0.7722,
+     "oos_max_dd_pct": -0.1309,
+     "oos_trades": 1,
+     "bh_return_pct": 51.7508,
+     "bh_max_dd_pct": -7.7406
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "BTCUSDT",
+   "resolution": "1d",
+   "oos_return_pct": 2.808,
+   "oos_max_dd_pct": -3.83,
+   "oos_trades": 2,
+   "is_return_pct": 0.237,
+   "bh_return_pct": 1.203,
+   "bh_max_dd_pct": -26.881,
+   "verdict": "only 2 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "fast": 8,
+    "slow": 26,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": -0.418,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": -22.4909,
+     "bh_max_dd_pct": -26.2077
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": 0.891,
+     "oos_return_pct": 2.6726,
+     "oos_max_dd_pct": -3.83,
+     "oos_trades": 2,
+     "bh_return_pct": 29.2685,
+     "bh_max_dd_pct": -5.43
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "BTCUSDT",
+   "resolution": "1d",
+   "oos_return_pct": -6.315,
+   "oos_max_dd_pct": -6.315,
+   "oos_trades": 2,
+   "is_return_pct": -0.751,
+   "bh_return_pct": 1.203,
+   "bh_max_dd_pct": -26.881,
+   "verdict": "only 2 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 30,
+    "high": 55,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "period": 14,
+      "low": 30,
+      "high": 65,
+      "size_pct": 40
+     },
+     "is_return_pct": 4.904,
+     "oos_return_pct": -6.4062,
+     "oos_max_dd_pct": -6.3146,
+     "oos_trades": 2,
+     "bh_return_pct": -22.4909,
+     "bh_max_dd_pct": -26.2077
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "period": 14,
+      "low": 30,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": -6.406,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 29.2685,
+     "bh_max_dd_pct": -5.43
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "BTCUSDT",
+   "resolution": "1d",
+   "oos_return_pct": -1.711,
+   "oos_max_dd_pct": -2.634,
+   "oos_trades": 9,
+   "is_return_pct": 0.962,
+   "bh_return_pct": 1.203,
+   "bh_max_dd_pct": -26.881,
+   "verdict": "only 9 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 6,
+    "range_pct": 8
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 5
+     },
+     "is_return_pct": 0.342,
+     "oos_return_pct": -2.2041,
+     "oos_max_dd_pct": -2.6338,
+     "oos_trades": 6,
+     "bh_return_pct": -22.4909,
+     "bh_max_dd_pct": -26.2077
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 8
+     },
+     "is_return_pct": 1.583,
+     "oos_return_pct": 0.5043,
+     "oos_max_dd_pct": -0.0576,
+     "oos_trades": 3,
+     "bh_return_pct": 29.2685,
+     "bh_max_dd_pct": -5.43
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "BTCUSDT",
+   "resolution": "1d",
+   "oos_return_pct": 0.073,
+   "oos_max_dd_pct": -0.981,
+   "oos_trades": 3,
+   "is_return_pct": 0.378,
+   "bh_return_pct": 1.203,
+   "bh_max_dd_pct": -26.881,
+   "verdict": "only 3 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "every": 48,
+    "size_pct": 5,
+    "take_profit_pct": 6,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "every": 48,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 0.379,
+     "oos_return_pct": -0.6644,
+     "oos_max_dd_pct": -0.8668,
+     "oos_trades": 1,
+     "bh_return_pct": -22.4909,
+     "bh_max_dd_pct": -26.2077
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "every": 48,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 0.376,
+     "oos_return_pct": 0.7303,
+     "oos_max_dd_pct": -0.1307,
+     "oos_trades": 2,
+     "bh_return_pct": 29.2685,
+     "bh_max_dd_pct": -5.43
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "BTCUSDT",
+   "resolution": "1d",
+   "oos_return_pct": -1.19,
+   "oos_max_dd_pct": -2.726,
+   "oos_trades": 7,
+   "is_return_pct": 0.817,
+   "bh_return_pct": 1.203,
+   "bh_max_dd_pct": -26.881,
+   "verdict": "only 7 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "pct": 8,
+    "lookback": 24,
+    "take_profit_pct": 5,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 1.389,
+     "oos_return_pct": -1.7467,
+     "oos_max_dd_pct": -2.5004,
+     "oos_trades": 6,
+     "bh_return_pct": -22.4909,
+     "bh_max_dd_pct": -26.2077
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "pct": 8,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.244,
+     "oos_return_pct": 0.5426,
+     "oos_max_dd_pct": -0.2614,
+     "oos_trades": 1,
+     "bh_return_pct": 29.2685,
+     "bh_max_dd_pct": -5.43
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "ETHTMN",
+   "resolution": "1d",
+   "oos_return_pct": 27.158,
+   "oos_max_dd_pct": -3.529,
+   "oos_trades": 0,
+   "is_return_pct": -1.542,
+   "bh_return_pct": 34.858,
+   "bh_max_dd_pct": -39.117,
+   "verdict": "only 0 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "fast": 12,
+    "slow": 26,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": -4.891,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": -27.2277,
+     "bh_max_dd_pct": -39.0967
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "fast": 12,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": 1.807,
+     "oos_return_pct": 26.9648,
+     "oos_max_dd_pct": -3.5288,
+     "oos_trades": 0,
+     "bh_return_pct": 83.4684,
+     "bh_max_dd_pct": -6.5072
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "ETHTMN",
+   "resolution": "1d",
+   "oos_return_pct": -1.101,
+   "oos_max_dd_pct": -6.455,
+   "oos_trades": 2,
+   "is_return_pct": -4.819,
+   "bh_return_pct": 34.858,
+   "bh_max_dd_pct": -39.117,
+   "verdict": "only 2 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 35,
+    "high": 55,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": 0.0,
+     "oos_return_pct": -6.0353,
+     "oos_max_dd_pct": -6.0354,
+     "oos_trades": 1,
+     "bh_return_pct": -27.2277,
+     "bh_max_dd_pct": -39.0967
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "period": 14,
+      "low": 35,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": -9.637,
+     "oos_return_pct": 5.1474,
+     "oos_max_dd_pct": -0.5442,
+     "oos_trades": 1,
+     "bh_return_pct": 83.4684,
+     "bh_max_dd_pct": -6.5072
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "ETHTMN",
+   "resolution": "1d",
+   "oos_return_pct": -6.437,
+   "oos_max_dd_pct": -7.055,
+   "oos_trades": 5,
+   "is_return_pct": 1.167,
+   "bh_return_pct": 34.858,
+   "bh_max_dd_pct": -39.117,
+   "verdict": "only 5 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 10,
+    "range_pct": 5
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 12
+     },
+     "is_return_pct": 2.82,
+     "oos_return_pct": -6.486,
+     "oos_max_dd_pct": -7.0548,
+     "oos_trades": 4,
+     "bh_return_pct": -27.2277,
+     "bh_max_dd_pct": -39.0967
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 5
+     },
+     "is_return_pct": -0.487,
+     "oos_return_pct": 0.0519,
+     "oos_max_dd_pct": -0.0252,
+     "oos_trades": 1,
+     "bh_return_pct": 83.4684,
+     "bh_max_dd_pct": -6.5072
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "ETHTMN",
+   "resolution": "1d",
+   "oos_return_pct": 3.312,
+   "oos_max_dd_pct": -0.817,
+   "oos_trades": 6,
+   "is_return_pct": 1.013,
+   "bh_return_pct": 34.858,
+   "bh_max_dd_pct": -39.117,
+   "verdict": "only 6 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "every": 12,
+    "size_pct": 5,
+    "take_profit_pct": 6,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "every": 24,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 1.524,
+     "oos_return_pct": -0.3083,
+     "oos_max_dd_pct": -0.7496,
+     "oos_trades": 3,
+     "bh_return_pct": -27.2277,
+     "bh_max_dd_pct": -39.0967
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "every": 12,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 0.502,
+     "oos_return_pct": 3.6312,
+     "oos_max_dd_pct": -0.6419,
+     "oos_trades": 3,
+     "bh_return_pct": 83.4684,
+     "bh_max_dd_pct": -6.5072
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "ETHTMN",
+   "resolution": "1d",
+   "oos_return_pct": -2.054,
+   "oos_max_dd_pct": -4.969,
+   "oos_trades": 11,
+   "is_return_pct": 0.202,
+   "bh_return_pct": 34.858,
+   "bh_max_dd_pct": -39.117,
+   "verdict": "only 11 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "pct": 3,
+    "lookback": 24,
+    "take_profit_pct": 5,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "pct": 8,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": 2.226,
+     "oos_return_pct": -4.5364,
+     "oos_max_dd_pct": -4.84,
+     "oos_trades": 8,
+     "bh_return_pct": -27.2277,
+     "bh_max_dd_pct": -39.0967
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "pct": 3,
+      "lookback": 24,
+      "take_profit_pct": 5,
+      "size_pct": 10
+     },
+     "is_return_pct": -1.823,
+     "oos_return_pct": 2.5746,
+     "oos_max_dd_pct": -0.6032,
+     "oos_trades": 3,
+     "bh_return_pct": 83.4684,
+     "bh_max_dd_pct": -6.5072
+    }
+   ]
+  },
+  {
+   "key": "ema_cross",
+   "symbol": "ETHUSDT",
+   "resolution": "1d",
+   "oos_return_pct": 18.635,
+   "oos_max_dd_pct": -2.822,
+   "oos_trades": 0,
+   "is_return_pct": -4.706,
+   "bh_return_pct": 7.01,
+   "bh_max_dd_pct": -33.783,
+   "verdict": "only 0 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "fast": 12,
+    "slow": 26,
+    "size_pct": 50
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "fast": 8,
+      "slow": 50,
+      "size_pct": 50
+     },
+     "is_return_pct": -4.814,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": -31.8022,
+     "bh_max_dd_pct": -33.7825
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "fast": 12,
+      "slow": 26,
+      "size_pct": 50
+     },
+     "is_return_pct": -4.598,
+     "oos_return_pct": 18.4634,
+     "oos_max_dd_pct": -2.8217,
+     "oos_trades": 0,
+     "bh_return_pct": 55.3485,
+     "bh_max_dd_pct": -5.4175
+    }
+   ]
+  },
+  {
+   "key": "rsi_reversion",
+   "symbol": "ETHUSDT",
+   "resolution": "1d",
+   "oos_return_pct": -1.618,
+   "oos_max_dd_pct": -4.172,
+   "oos_trades": 1,
+   "is_return_pct": 0.253,
+   "bh_return_pct": 7.01,
+   "bh_max_dd_pct": -33.783,
+   "verdict": "only 1 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "period": 14,
+    "low": 30,
+    "high": 55,
+    "size_pct": 40
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "period": 14,
+      "low": 25,
+      "high": 65,
+      "size_pct": 40
+     },
+     "is_return_pct": 7.859,
+     "oos_return_pct": -1.718,
+     "oos_max_dd_pct": -4.1716,
+     "oos_trades": 1,
+     "bh_return_pct": -31.8022,
+     "bh_max_dd_pct": -33.7825
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "period": 14,
+      "low": 30,
+      "high": 55,
+      "size_pct": 40
+     },
+     "is_return_pct": -7.353,
+     "oos_return_pct": 0.0,
+     "oos_max_dd_pct": 0.0,
+     "oos_trades": 0,
+     "bh_return_pct": 55.3485,
+     "bh_max_dd_pct": -5.4175
+    }
+   ]
+  },
+  {
+   "key": "grid",
+   "symbol": "ETHUSDT",
+   "resolution": "1d",
+   "oos_return_pct": -0.968,
+   "oos_max_dd_pct": -1.353,
+   "oos_trades": 8,
+   "is_return_pct": -0.92,
+   "bh_return_pct": 7.01,
+   "bh_max_dd_pct": -33.783,
+   "verdict": "only 8 OOS trades (< 30); lost money out of sample (holding cash was better)",
+   "survives": false,
+   "chosen": {
+    "levels": 10,
+    "range_pct": 5
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "levels": 6,
+      "range_pct": 8
+     },
+     "is_return_pct": -0.227,
+     "oos_return_pct": -1.3152,
+     "oos_max_dd_pct": -1.3527,
+     "oos_trades": 6,
+     "bh_return_pct": -31.8022,
+     "bh_max_dd_pct": -33.7825
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "levels": 10,
+      "range_pct": 5
+     },
+     "is_return_pct": -1.613,
+     "oos_return_pct": 0.3523,
+     "oos_max_dd_pct": -0.1283,
+     "oos_trades": 2,
+     "bh_return_pct": 55.3485,
+     "bh_max_dd_pct": -5.4175
+    }
+   ]
+  },
+  {
+   "key": "dca",
+   "symbol": "ETHUSDT",
+   "resolution": "1d",
+   "oos_return_pct": 1.558,
+   "oos_max_dd_pct": -0.652,
+   "oos_trades": 3,
+   "is_return_pct": -0.321,
+   "bh_return_pct": 7.01,
+   "bh_max_dd_pct": -33.783,
+   "verdict": "only 3 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "every": 24,
+    "size_pct": 5,
+    "take_profit_pct": 6,
+    "max_entries": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "every": 48,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": 0.449,
+     "oos_return_pct": -0.6545,
+     "oos_max_dd_pct": -0.6432,
+     "oos_trades": 1,
+     "bh_return_pct": -31.8022,
+     "bh_max_dd_pct": -33.7825
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "every": 24,
+      "size_pct": 5,
+      "take_profit_pct": 6,
+      "max_entries": 10
+     },
+     "is_return_pct": -1.091,
+     "oos_return_pct": 2.2152,
+     "oos_max_dd_pct": -0.2803,
+     "oos_trades": 2,
+     "bh_return_pct": 55.3485,
+     "bh_max_dd_pct": -5.4175
+    }
+   ]
+  },
+  {
+   "key": "dip",
+   "symbol": "ETHUSDT",
+   "resolution": "1d",
+   "oos_return_pct": 0.421,
+   "oos_max_dd_pct": -3.429,
+   "oos_trades": 14,
+   "is_return_pct": -0.493,
+   "bh_return_pct": 7.01,
+   "bh_max_dd_pct": -33.783,
+   "verdict": "only 14 OOS trades (< 30)",
+   "survives": false,
+   "chosen": {
+    "pct": 5,
+    "lookback": 24,
+    "take_profit_pct": 3,
+    "size_pct": 10
+   },
+   "folds": [
+    {
+     "train": [
+      "2025-12-27",
+      "2026-04-25"
+     ],
+     "test": [
+      "2026-04-26",
+      "2026-06-24"
+     ],
+     "params": {
+      "pct": 5,
+      "lookback": 24,
+      "take_profit_pct": 2,
+      "size_pct": 10
+     },
+     "is_return_pct": 0.599,
+     "oos_return_pct": -2.8915,
+     "oos_max_dd_pct": -3.4111,
+     "oos_trades": 9,
+     "bh_return_pct": -31.8022,
+     "bh_max_dd_pct": -33.7825
+    },
+    {
+     "train": [
+      "2026-02-25",
+      "2026-06-24"
+     ],
+     "test": [
+      "2026-06-25",
+      "2026-08-23"
+     ],
+     "params": {
+      "pct": 5,
+      "lookback": 24,
+      "take_profit_pct": 3,
+      "size_pct": 10
+     },
+     "is_return_pct": -1.585,
+     "oos_return_pct": 3.3609,
+     "oos_max_dd_pct": -0.2688,
+     "oos_trades": 5,
+     "bh_return_pct": 55.3485,
+     "bh_max_dd_pct": -5.4175
+    }
+   ]
+  }
+ ]
+}

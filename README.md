@@ -6,6 +6,31 @@
 > هوش مصنوعی فقط تحلیل و پیشنهاد می‌دهد؛ هیچ سفارشی را خودش ثبت نمی‌کند. **این ابزار توصیهٔ مالی نیست.**
 > ساخته‌شده برای هکاتون والکس؛ محصول مستقل و غیررسمی.
 
+## Wallex challenge entry: the Zirak trading agent
+
+> **عامل معاملاتی زیرک برای چالش والکس:** هر کندل، الگوهای قابل‌توضیح فرصت می‌سازند؛ یک **مدل یادگیری ماشین**
+> (متا-لیبلینگ با برچسب سه‌مانعی و ارزش مورد انتظار بعد از کارمزد) دربارهٔ هر فرصت تصمیم می‌گیرد و حجم را تعیین
+> می‌کند؛ یک **عامل مدل زبانی با ابزار** هر ساعت وضعیت ریسک هر بازار را تنظیم می‌کند؛ و لایهٔ ریسک قطعی با سقف‌های
+> سخت اجرا را کنترل می‌کند. همه‌چیز پیش از پایان چالش به تومان برمی‌گردد و دلیل هر تصمیم ثبت می‌شود.
+
+| Read this | For |
+|---|---|
+| [docs/ALGORITHM.md](docs/ALGORITHM.md) | **The technical document for the judges**: architecture, AI use, Wallex tools, buy/sell rules, risk, re-running |
+| [docs/challenge/README.md](docs/challenge/README.md) | The spec, the scoring map and the plan ([official text](docs/challenge/spec.md)) |
+| [docs/challenge/RUNBOOK.md](docs/challenge/RUNBOOK.md) | The 3 event days, step by step (backfill, train, shadow, probe, live, kill, deliverables) |
+| [docs/challenge/demo-video.md](docs/challenge/demo-video.md) | The 5-minute demo video script |
+
+```bash
+cd backend && pip install -e ".[dev]"
+zirak agent backtest --config config/sample-1h.json --days 30   # offline, on the bundled real Wallex sample
+zirak agent verify ../data/runs/<run>                           # recompute every AI decision from the logs
+zirak agent shadow                                              # live Wallex data, paper orders (needs access to Wallex)
+```
+Docker: `GIT_COMMIT=$(git rev-parse HEAD) docker compose --profile shadow up -d --build` (`--profile live` for real orders).
+The web app's `/agent` page shows any run: results, equity, AI decisions, postures, positions, decision log.
+
+## The original assistant
+
 Zirak is a smart, explainable, risk-first trading assistant built for the Wallex hackathon
 («تریدر هوشمند برای والکس»). It is meant to be clearly smarter than a rule-based grid bot:
 
@@ -18,7 +43,11 @@ Zirak is a smart, explainable, risk-first trading assistant built for the Wallex
 - **Risk first** — position sizing, max exposure, per-order cap, stop-loss / take-profit, daily loss
   limit, cooldown, market precision and minimums; a one-tap kill switch (UI, API, CLI and a KILL file).
 - **Honest backtests** — the same Bot/Strategy/RiskManager code as paper trading, fills on the *next*
-  candle, fees, slippage, volume-limited partial fills, compared against buy-and-hold.
+  candle, fees, slippage, volume-limited partial fills, compared against buy-and-hold; walk-forward
+  research reports out-of-sample results only ([`docs/research.md`](docs/research.md)).
+- **Optional modules** (`MODULES` flag, `/tools` page) — market regime, order-book intelligence and the
+  fair Toman price of USDT, news sentiment, portfolio rebalancing, alerts (Telegram/Bale), an AI trading
+  coach, and a headless competition mode with team risk limits and audit logs.
 
 ## Status
 
@@ -53,6 +82,10 @@ On macOS/Linux use `backend/.venv/bin/...` instead of `Scripts/...exe`.
 | Backtest a baseline | `zirak backtest --strategy ema_cross --symbol BTCTMN --resolution 1h` |
 | Backtest a rules spec | `zirak backtest --spec spec.json` |
 | Headless paper bot (replay) | `zirak paper --strategy rsi_reversion --symbol ETHTMN --speed 0.2` |
+| Walk-forward research | `zirak research` (writes `docs/research-results.json`) |
+| Competition mode (paper) | `zirak compete [--config cfg.json]` (files in `data/competition/<name>/`) |
+| Challenge agent | `zirak agent train / backtest / shadow / live / report / verify / export / probe / flatten` |
+| MCP server (read-only tools for AI agents) | `zirak mcp` |
 | **Kill switch** | `zirak kill` (then `zirak reset-kill`) |
 | API server | `zirak serve --reload` |
 | Backfill Wallex history | `zirak backfill` (1m: 3 days, 1h: 180 days, 1d: 1000 days by default) |
@@ -76,7 +109,8 @@ Baseline strategies: `ema_cross`, `rsi_reversion`, `grid`, `dca`. Reports are sa
 ```
 backend/   FastAPI + engine (Python 3.12)      → see CLAUDE.md for the module map
 frontend/  Next.js 16 PWA, RTL Persian, Vazirmatn
-docs/      progress.md, spec-day.md, pitch.md (Persian), wallex-api/ (exchange docs)
+docs/      progress.md, spec-day.md, research.md, pitch.md (Persian), fake-specs/ (rehearsal),
+           wallex-api/ (exchange docs)
 ```
 
 ## Quality gates

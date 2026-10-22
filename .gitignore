@@ -29,3 +29,6 @@ backend/data/
 Thumbs.db
 .vscode/
 .idea/
+
+# profiler dumps
+*.out

@@ -10,8 +10,9 @@ const NAV = [
   { href: "/", label: "بازار", icon: "M3 17l6-6 4 4 8-8M14 7h7v7" },
   { href: "/build", label: "استراتژی", icon: "M4 6h16M4 12h10M4 18h7" },
   { href: "/backtest", label: "بک‌تست", icon: "M4 19V5M4 19h16M8 15l3-4 3 2 4-6" },
+  { href: "/tools", label: "ابزارها", icon: "M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1M12 9a3 3 0 100 6 3 3 0 000-6z" },
   { href: "/dashboard", label: "داشبورد", icon: "M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" },
-  { href: "/safety", label: "ایمنی", icon: "M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6zM9 12l2 2 4-4" },
+  { href: "/agent", label: "عامل", icon: "M12 2a4 4 0 014 4v1h1a3 3 0 013 3v6a3 3 0 01-3 3H7a3 3 0 01-3-3v-6a3 3 0 013-3h1V6a4 4 0 014-4zM9 13h.01M15 13h.01M9 17h6" },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -71,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <footer className="px-4 pb-24 text-center text-[11px] text-muted">ساخته‌شده برای هکاتون والکس · محصول مستقل، غیررسمی</footer>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/95 backdrop-blur" aria-label="ناوبری اصلی">
-        <ul className="mx-auto grid max-w-xl grid-cols-5">
+        <ul className="mx-auto grid max-w-xl grid-cols-6">
           {NAV.map((item) => {
             const active = item.href === "/" ? path === "/" : path.startsWith(item.href);
             return (

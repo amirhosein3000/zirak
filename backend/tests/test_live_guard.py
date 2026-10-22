@@ -110,6 +110,11 @@ def test_no_withdraw_or_transfer_code_exists() -> None:
                 assert not any(b in name.lower() for b in banned), f"{path.name}: {name}"
             if isinstance(node, ast.Constant) and isinstance(node.value, str) and node.value.startswith("/"):
                 assert not any(b in node.value.lower() for b in banned), f"{path.name}: {node.value}"
+                # Credit plan: closing the package, wallet links, renewals and sub-account moves are never called.
+                assert node.value.rstrip("/") != "/v1/prop/user/packages", f"{path.name}: {node.value}"
+                assert not any(
+                    b in node.value for b in ("connect-to-wallet", "enable-renew", "/sub-accounts")
+                ), f"{path.name}: {node.value}"
 
 
 def test_only_wallex_client_is_real() -> None:

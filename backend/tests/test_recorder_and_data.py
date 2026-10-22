@@ -128,6 +128,20 @@ def test_live_market_orders_become_protected_limits(tmp_path: Path) -> None:
     assert ex.protect(keep, D("268000"), D("50")) is keep
 
 
+def test_live_order_shrinks_to_fit_the_hard_cap_after_protection(tmp_path: Path) -> None:
+    """Sized to exactly MAX_ORDER_TMN at the close, a protected (+0.5 %) price must not trip the hard cap."""
+    m = DEFAULT_MARKETS["USDTTMN"]
+    ex = Executor(WallexClient(Settings(kill_file=tmp_path / "K")), m)
+    cap = D("1000000")
+    req = ex.protect(OrderRequest("USDTTMN", Side.BUY, OrderType.MARKET, D("3.73")), D("268000"), D("50"))
+    assert req.price is not None and req.qty * req.price > cap  # 3.73 * 269340 = 1,004,638 > cap
+    fitted = ex.fit_cap(req, cap)
+    assert fitted is not None and fitted.price is not None
+    assert fitted.qty == D("3.71") and fitted.qty * fitted.price <= cap
+    assert ex.fit_cap(req, None) is req
+    assert ex.fit_cap(req, D("50000")) is None  # below the market minimum after shrinking
+
+
 def test_bot_cancels_stale_live_orders(tmp_path: Path) -> None:
     """Order TTL: an unfilled order older than order_ttl_s is canceled at the next sync."""
     from tests.conftest import make_paper

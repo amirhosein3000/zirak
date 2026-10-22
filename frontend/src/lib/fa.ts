@@ -4,11 +4,16 @@
 const nf = (max: number, min = 0) =>
   new Intl.NumberFormat("fa-IR", { maximumFractionDigits: max, minimumFractionDigits: min });
 
+// A signed number inside RTL text renders its sign on the wrong side ("۵٪-"). Wrapping it in an
+// LTR isolate (LRI ... PDI) keeps "-۵٪" / "+۵٪" intact wherever it is placed.
+const ltr = (text: string) => `\u2066${text}\u2069`;
+
 export function faNum(value: number | string | null | undefined, maxDecimals = 2): string {
   if (value === null || value === undefined || value === "") return "—";
   const n = typeof value === "string" ? Number(value) : value;
   if (!Number.isFinite(n)) return "—";
-  return nf(maxDecimals).format(n);
+  const text = nf(maxDecimals).format(n);
+  return n < 0 ? ltr(text) : text;
 }
 
 export function faPct(value: number | string | null | undefined, decimals = 1, signed = false): string {
@@ -16,7 +21,8 @@ export function faPct(value: number | string | null | undefined, decimals = 1, s
   const n = typeof value === "string" ? Number(value) : value;
   if (!Number.isFinite(n)) return "—";
   const sign = signed && n > 0 ? "+" : "";
-  return `${sign}${nf(decimals).format(n)}٪`;
+  const text = `${sign}${nf(decimals).format(n)}٪`;
+  return n < 0 || sign ? ltr(text) : text;
 }
 
 export const QUOTE_FA: Record<string, string> = { TMN: "تومان", USDT: "تتر" };

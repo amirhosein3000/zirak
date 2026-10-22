@@ -1,0 +1,55 @@
+{
+  "name": "challenge",
+  "markets": [
+    "BTCTMN",
+    "ETHTMN",
+    "USDTTMN"
+  ],
+  "context_markets": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "resolution": "15m",
+  "setups": [
+    "mean_reversion",
+    "breakout",
+    "basis_reversion"
+  ],
+  "initial_equity_tmn": 5000000,
+  "posture_interval_min": 60,
+  "risk": {
+    "risk_per_trade_pct": 0.6,
+    "max_position_pct": 30,
+    "max_exposure_pct": 70,
+    "max_positions": 3,
+    "cash_buffer_pct": 1.0,
+    "daily_loss_pct": 2.5,
+    "dd_pause_pct": 5,
+    "dd_kill_pct": 8,
+    "liquidation_pause_cushion": 0.6,
+    "liquidation_kill_cushion": 0.3,
+    "cooldown_bars": 4
+  },
+  "model": {
+    "min_prob": 0.5,
+    "min_ev_pct": 0.05,
+    "kelly_ref": 0.25,
+    "min_rows": 120,
+    "retrain_hours": 24,
+    "train_days": 45
+  },
+  "execution": {
+    "entry": "maker_first",
+    "maker_offset_bps": 5,
+    "maker_wait_s": 180,
+    "max_slippage_bps": 40,
+    "poll_s": 5
+  },
+  "clock": {
+    "start": null,
+    "end": null,
+    "no_entry_before_end_h": 4,
+    "flatten_before_end_min": 90,
+    "hard_flatten_before_end_min": 30
+  }
+}

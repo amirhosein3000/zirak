@@ -16,8 +16,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ValidationError
 
 from zirak import __version__
+from zirak.agent.api import router as agent_router
+from zirak.backtest.drill import PREFIX_CANDLES, SCENARIOS, assemble, build_path
 from zirak.backtest.engine import BacktestSetup, run_backtest, save_report
-from zirak.backtest.insights import Period, risk_shield, select_period, unprotected, zirak_score
+from zirak.backtest.insights import (
+    WARMUP_CANDLES,
+    Period,
+    risk_shield,
+    select_period,
+    unprotected,
+    zirak_score,
+)
 from zirak.config import Settings, load_settings
 from zirak.data.source import build_replay, load_series
 from zirak.engine.risk import RiskConfig
@@ -32,6 +41,8 @@ from zirak.llm.explain import explain_entry
 from zirak.llm.provider import build_llm
 from zirak.markets import ASSET_NAMES_FA, market_name_fa
 from zirak.models import RESOLUTION_SECONDS, Candle, Market, OrderBook, resolution_delta, utcnow
+from zirak.modules import AVAILABLE as MODULES_AVAILABLE
+from zirak.modules import mount as mount_modules
 from zirak.strategy.base import Strategy
 from zirak.strategy.registry import DEFAULT_PARAMS, STRATEGIES, catalog
 from zirak.strategy.registry import build_strategy as make_strategy
@@ -61,6 +72,10 @@ LIVE_CONFIRM_PHRASE = "می‌دانم با پول واقعی معامله می�
 
 class LiveStartIn(RunIn):
     confirm: str = ""
+
+
+class DrillIn(RunIn):
+    scenario: str = "flash_crash"
 
 
 class ExplainIn(BaseModel):
@@ -144,6 +159,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
     app.state.zirak = state
+    mounted = mount_modules(app, settings)
+    app.include_router(agent_router)
+
+    @app.get("/api/modules")
+    async def modules() -> dict[str, Any]:
+        return {"enabled": mounted, "available": MODULES_AVAILABLE}
 
     # ---- meta ------------------------------------------------------------------------------------
     @app.get("/api/health")
@@ -383,6 +404,33 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "rows": rows,
             "headline_fa": headline,
         }
+
+    @app.get("/api/drill/scenarios")
+    async def drill_scenarios() -> list[dict[str, str]]:
+        return [{"key": k, "title_fa": v.title_fa, "story_fa": v.story_fa} for k, v in SCENARIOS.items()]
+
+    @app.post("/api/drill")
+    async def drill(body: DrillIn) -> dict[str, Any]:
+        """Crash drill: latest real candles + a synthetic stress scenario, played through your strategy
+        with and without the risk manager, next to an emotional trader and a holder."""
+        scenario = SCENARIOS.get(body.scenario)
+        if scenario is None:
+            raise HTTPException(422, "سناریوی ناشناخته")
+        strat, risk, symbol, resolution = strategy_and_risk(body)
+        market, series = market_series(symbol, resolution)
+        need = WARMUP_CANDLES + PREFIX_CANDLES
+        if len(series) < need:
+            raise HTTPException(422, "دادهٔ کافی برای مانور نیست")
+        path = build_path(series, scenario, market, resolution)
+        real = series[-PREFIX_CANDLES:]
+        period = Period("drill", scenario.title_fa, series[-need:-PREFIX_CANDLES], real + path)
+        protected = await run_one(strat, risk, market, resolution, period, body)
+        naked = await run_one(strategy_and_risk(body)[0], unprotected(risk), market, resolution, period, body)
+        fomo = make_strategy("fomo", {})
+        emotional = await run_one(fomo, unprotected(RiskConfig()), market, resolution, period, body)
+        sl = float(risk.stop_loss_pct) if risk.stop_loss_pct is not None else None
+        out = assemble(scenario, market.quote, path[0].ts, protected, naked, emotional, sl)
+        return {"symbol": symbol, "resolution": resolution, **out}
 
     @app.get("/api/backtests/{report_id}")
     async def get_report(report_id: str) -> dict[str, Any]:

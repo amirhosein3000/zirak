@@ -30,6 +30,12 @@ type Props = {
   ariaLabel: string;
   /** trade markers drawn on the first series (buy ▲ / sell ▼); hover shows their labels */
   markers?: Marker[];
+  /** fixed y range (e.g. for animated playback, so the axis doesn't jump every frame) */
+  domain?: [number, number];
+  /** total x positions to lay out; values fill the first x.length of them (playback grows left to right) */
+  slots?: number;
+  /** name each line at its right end (default: when there are 2-4 series) */
+  endLabels?: boolean;
 };
 
 const PAD = { top: 12, right: 8, bottom: 22, left: 8 };
@@ -40,7 +46,7 @@ const Y_TICKS = 3;
  * listing every series, legend for >= 2 series and direct labels at the line ends, plus a table view.
  * Time runs left -> right even in RTL pages, which is the convention for price charts.
  */
-export function LineChart({ x, series, height = 200, format, area = false, baseline, ariaLabel, markers = [] }: Props) {
+export function LineChart({ x, series, height = 200, format, area = false, baseline, ariaLabel, markers = [], domain, slots, endLabels = true }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(340);
   const [hover, setHover] = useState<number | null>(null);
@@ -54,7 +60,7 @@ export function LineChart({ x, series, height = 200, format, area = false, basel
   }, []);
 
   const n = x.length;
-  const { min, max } = useMemo(() => {
+  const auto = useMemo(() => {
     let lo = Infinity;
     let hi = -Infinity;
     const all = series.flatMap((s) => s.values).filter(Number.isFinite);
@@ -68,6 +74,8 @@ export function LineChart({ x, series, height = 200, format, area = false, basel
     const pad = Math.max((hi - lo) * 0.08, Math.abs(hi) * 0.005, 1e-9);
     return { min: lo - pad, max: hi + pad };
   }, [series, baseline]);
+
+  const { min, max } = domain ? { min: domain[0], max: domain[1] } : auto;
 
   // Place each marker on the last candle at or before its time (binary search on the time axis).
   const placed = useMemo(() => {
@@ -91,10 +99,11 @@ export function LineChart({ x, series, height = 200, format, area = false, basel
   if (n < 2) return <div className="py-8 text-center text-sm text-muted">دادهٔ کافی برای نمودار نیست.</div>;
 
   // reserve room on the right for direct labels when there are few series
-  const labelRoom = series.length > 1 && series.length <= 4 ? 64 : 0;
+  const labelRoom = endLabels && series.length > 1 && series.length <= 4 ? 64 : 0;
   const innerW = width - PAD.left - PAD.right - labelRoom;
   const innerH = height - PAD.top - PAD.bottom;
-  const sx = (i: number) => PAD.left + (i / (n - 1)) * innerW;
+  const span = Math.max(n, slots ?? n) - 1;
+  const sx = (i: number) => PAD.left + (i / span) * innerW;
   const sy = (v: number) => PAD.top + (1 - (v - min) / (max - min)) * innerH;
   const path = (vals: number[]) => vals.map((v, i) => `${i ? "L" : "M"}${sx(i).toFixed(1)},${sy(v).toFixed(1)}`).join("");
   const ticks = Array.from({ length: Y_TICKS + 1 }, (_, i) => min + ((max - min) * i) / Y_TICKS);
@@ -103,7 +112,7 @@ export function LineChart({ x, series, height = 200, format, area = false, basel
     const rect = wrap.current?.getBoundingClientRect();
     if (!rect) return;
     const rel = (clientX - rect.left - PAD.left) / innerW;
-    setHover(Math.min(n - 1, Math.max(0, Math.round(rel * (n - 1)))));
+    setHover(Math.min(n - 1, Math.max(0, Math.round(rel * span))));
   };
 
   const tableStep = Math.max(1, Math.ceil(n / 12));
@@ -135,9 +144,6 @@ export function LineChart({ x, series, height = 200, format, area = false, basel
           {ticks.map((t, i) => (
             <g key={i}>
               <line x1={PAD.left} x2={PAD.left + innerW} y1={sy(t)} y2={sy(t)} stroke="var(--border)" strokeWidth="1" />
-              <text x={PAD.left + 2} y={sy(t) - 3} fontSize="10" fill="var(--muted)" className="num">
-                {format(t)}
-              </text>
             </g>
           ))}
           {area && series[0] && (
@@ -176,6 +182,22 @@ export function LineChart({ x, series, height = 200, format, area = false, basel
                 />
               );
             })}
+          {/* Tick labels after the lines, with a halo, so a line never runs through a number. */}
+          {ticks.map((t, i) => (
+            <text
+              key={i}
+              x={PAD.left + 2}
+              y={sy(t) - 3}
+              fontSize="10"
+              fill="var(--muted)"
+              stroke="var(--surface)"
+              strokeWidth="3"
+              paintOrder="stroke"
+              className="num"
+            >
+              {format(t)}
+            </text>
+          ))}
           {labelRoom > 0 &&
             series.map((s) => (
               <text key={s.name} x={sx(n - 1) + 6} y={sy(s.values[n - 1]) + 4} fontSize="10.5" fill="var(--text)" fontWeight="700">

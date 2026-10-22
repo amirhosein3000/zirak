@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 from tests.conftest import candle
@@ -233,3 +234,17 @@ def test_real_mode_sends_capped_limit_orders_and_kill_cancels(tmp_path: Path) ->
         assert body["type"] == "LIMIT"
         assert D(body["price"]) * D(body["quantity"]) <= D("1000000")  # hard cap from the environment
     assert all(not o["active"] for o in open_orders.values()), "kill switch left an order open"
+    events = runner.bot.order_events if runner.bot else []
+    assert [e["status"] for e in events][:1] == ["NEW"] and events[-1]["status"] == "CANCELED"
+    assert set(events[0]) >= {"timestamp_utc", "client_order_id", "filled_quantity", "fee_asset", "reason"}
+
+    # A manual order on the account (or a previous run's leftover) blocks a new real bot.
+    runner.reset_kill()
+    open_orders["manual1"] = {**next(iter(open_orders.values())), "clientOrderId": "manual1", "active": True}
+    again = BotRunner(s, ReplayExchange({}), live)
+
+    async def restart() -> None:
+        with pytest.raises(RunnerError, match="not placed by this bot"):
+            await again.start(build_strategy("dca", {}), RiskConfig(), "USDTTMN", "1m", real=True)
+
+    asyncio.run(restart())

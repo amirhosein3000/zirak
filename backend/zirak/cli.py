@@ -9,7 +9,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from zirak.config import SAMPLE_DATA_DIR, WALLEX_SAMPLE_DIR, load_settings
+from zirak.config import REPO_ROOT, SAMPLE_DATA_DIR, WALLEX_SAMPLE_DIR, load_settings
 
 
 def _json_arg(raw: str | None) -> dict[str, Any]:
@@ -135,6 +135,104 @@ def cmd_paper(args: argparse.Namespace) -> int:
                 )
         st = await runner.status()
         print("finished:", {k: st["bot"][k] for k in ("equity", "pnl_pct", "killed")} if st["bot"] else st)
+
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        print("interrupted")
+    return 0
+
+
+def cmd_research(args: argparse.Namespace) -> int:
+    """Walk-forward research over every strategy x market x resolution; writes a JSON results file."""
+    import json
+
+    from zirak.backtest.walkforward import GRIDS, walk_forward
+    from zirak.data.source import build_replay
+    from zirak.fees import FeeModel
+
+    s = load_settings()
+    replay, label = build_replay(s)
+    fees = FeeModel(s.fee_maker, s.fee_taker)
+    # resolution -> (train, test) window in candles
+    windows = {"1h": (480, 240), "4h": (120, 60), "1d": (120, 60)}
+    symbols = _symbols(args, s.markets)
+    results = []
+
+    async def run() -> None:
+        for res, (train, test) in windows.items():
+            for symbol in symbols:
+                series = replay.series(symbol, res)
+                market = replay.markets.get(symbol)
+                if market is None or len(series) < train + test + 100:
+                    continue
+                initial = s.paper_start_tmn if market.quote == "TMN" else s.paper_start_usdt
+                for key in GRIDS:
+                    wf = await walk_forward(
+                        key, market, res, series, train, test, fees, s.slippage_bps, initial
+                    )
+                    results.append(wf.to_dict())
+                    print(
+                        f"{res:3s} {symbol:8s} {key:14s} oos {wf.oos_return_pct:+8.2f}% dd {wf.oos_max_dd_pct:7.2f}% "
+                        f"trades {wf.oos_trades:3d} | b&h {wf.bh_return_pct:+8.2f}% dd {wf.bh_max_dd_pct:7.2f}% "
+                        f"| {wf.verdict}"
+                    )
+
+    asyncio.run(run())
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    meta = {
+        "data": label,
+        "fee_taker_pct": str(s.fee_taker_pct),
+        "fee_maker_pct": str(s.fee_maker_pct),
+        "slippage_bps": str(s.slippage_bps),
+        "windows": windows,
+    }
+    out.write_text(
+        json.dumps({"meta": meta, "results": results}, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+    print(f"wrote {out} ({sum(r['survives'] for r in results)} of {len(results)} configurations survive)")
+    return 0
+
+
+def cmd_compete(args: argparse.Namespace) -> int:
+    """Competition mode (zirak/modules/competition.py): several paper strategies + team limits."""
+    from zirak.data.source import build_replay
+    from zirak.exchange.wallex import WallexClient
+    from zirak.modules.competition import DEFAULT_CONFIG, Competition, CompetitionIn
+
+    s = load_settings()
+    cfg = CompetitionIn.model_validate(_json_arg(args.config) if args.config else DEFAULT_CONFIG)
+    if args.speed is not None:
+        cfg = cfg.model_copy(update={"speed_s": args.speed})
+    replay, label = build_replay(s)
+    live = WallexClient(s) if s.data_source == "wallex" else None
+    comp = Competition(s, cfg, replay, live)
+
+    async def run() -> None:
+        await comp.start()
+        print(
+            f"competition '{cfg.name}' started: {len(cfg.entries)} entries on "
+            f"{'LIVE Wallex' if live else label} data, paper money. Files: {comp.out_dir}"
+        )
+        print("Stop: Ctrl+C (orderly) or `zirak kill` (kill switch).")
+        t0 = asyncio.get_running_loop().time()
+        try:
+            while comp.running:
+                await asyncio.sleep(max(cfg.write_every_s, 1.0))
+                perf = await comp.performance()
+                print(
+                    f"equity {perf['total_equity_tmn']} TMN  pnl {perf['pnl_pct']}%  "
+                    f"dd {perf['drawdown_from_peak_pct']}%"
+                )
+                if args.duration and asyncio.get_running_loop().time() - t0 > args.duration:
+                    break
+        finally:
+            await comp.stop()
+            perf = await comp.performance()
+            print("final:", {k: perf[k] for k in ("total_equity_tmn", "pnl_pct", "stopped_reason")})
+            if live is not None:
+                await live.close()
 
     try:
         asyncio.run(run())
@@ -325,6 +423,17 @@ def main(argv: list[str] | None = None) -> int:
             sp.add_argument("--speed", type=float, default=0.2, help="seconds per candle")
         sp.set_defaults(fn=fn)
 
+    sp = sub.add_parser("research", help="walk-forward strategy research (out-of-sample only)")
+    sp.add_argument("--symbols", help="comma list; default MARKETS")
+    sp.add_argument("--out", default=str(REPO_ROOT / "docs" / "research-results.json"))
+    sp.set_defaults(fn=cmd_research)
+
+    sp = sub.add_parser("compete", help="competition mode: several paper strategies with team limits")
+    sp.add_argument("--config", help="CompetitionIn JSON string or file (default: conservative preset)")
+    sp.add_argument("--speed", type=float, help="replay: seconds per candle")
+    sp.add_argument("--duration", type=float, help="stop after N seconds")
+    sp.set_defaults(fn=cmd_compete)
+
     sp = sub.add_parser("kill", help="KILL SWITCH: stop all bots and cancel open orders")
     sp.add_argument("--api", default="http://127.0.0.1:8000")
     sp.set_defaults(fn=cmd_kill)
@@ -356,6 +465,10 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("--days-1h", type=float, default=60)
     sp.add_argument("--days-1d", type=float, default=400)
     sp.set_defaults(fn=cmd_export_sample)
+
+    from zirak.agent.cli import add_parser as add_agent_parser
+
+    add_agent_parser(sub)
 
     args = p.parse_args(argv)
     code: int = args.fn(args)

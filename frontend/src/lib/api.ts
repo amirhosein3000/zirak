@@ -290,6 +290,27 @@ export type RunRequest = {
   period?: PeriodKey;
 };
 
+export type DrillScenario = { key: string; title_fa: string; story_fa: string };
+export type DrillEvent = { i: number; kind: "start" | "buy" | "sell" | "stop" | "halt" | "profit" | "blocked" | "bottom"; text_fa: string };
+export type DrillLine = "zirak" | "naked" | "emotional" | "hold";
+export type Drill = {
+  symbol: string;
+  quote: string;
+  scenario: DrillScenario;
+  start_index: number;
+  x: string[];
+  price: number[];
+  lines: Record<DrillLine, number[]>;
+  titles_fa: Record<DrillLine, string>;
+  results: { key: DrillLine; title_fa: string; return_pct: number; max_drawdown_pct: number }[];
+  bottom_pct: number;
+  blocked: number;
+  events: DrillEvent[];
+  markers: { ts: string; side: "buy" | "sell"; label: string; blocked: boolean }[];
+  headline_fa: string;
+  note_fa: string;
+};
+
 // ---- endpoints -------------------------------------------------------------------------------
 export const api = {
   health: () => call<Health>("/api/health"),
@@ -309,6 +330,8 @@ export const api = {
   kill: () => post<BotStatus & { killed: boolean; canceled_orders: string[] }>("/api/kill"),
   killReset: () => post<BotStatus>("/api/kill/reset"),
   duel: (req: RunRequest) => post<Duel>("/api/duel", req),
+  drillScenarios: () => call<DrillScenario[]>("/api/drill/scenarios"),
+  drill: (req: RunRequest & { scenario: string }) => post<Drill>("/api/drill", req),
   preflight: () => call<Preflight>("/api/live/preflight"),
   liveStart: (req: RunRequest & { confirm: string }) => post<BotStatus>("/api/live/start", req),
 };

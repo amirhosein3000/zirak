@@ -28,6 +28,14 @@ from zirak.models import ZERO, Candle, Market, Order, Side, resolution_delta, ut
 from zirak.strategy.base import COLUMNS, Frame, Signal, Strategy, StrategyContext
 
 
+def plain(d: Decimal | None) -> str:
+    """Fixed-point text for logs and CSVs (never scientific notation like 2.9E-7)."""
+    if d is None:
+        return ""
+    text = format(d, "f")
+    return text.rstrip("0").rstrip(".") if "." in text else text
+
+
 class SimClock:
     """A settable clock so simulated orders get simulated timestamps."""
 
@@ -125,6 +133,7 @@ class Bot:
         window: int = 150,
         fill_on_candle: bool = True,
         order_ttl_s: float | None = None,
+        max_data_age_s: float | None = None,
     ) -> None:
         self.strategy = strategy
         self.risk = risk
@@ -141,6 +150,9 @@ class Bot:
         self.equity_curve: list[EquityPoint] = []
         self._seen: dict[str, _Seen] = {}
         self._open: dict[str, LogEntry] = {}  # order id -> log entry, for orders still being filled
+        #: one row per order state change (status or filled quantity), for audit logs (e.g. orders.csv)
+        self.order_events: list[dict[str, Any]] = []
+        self._order_state: dict[str, tuple[str, Decimal]] = {}
         self.stopped = False
         self.last_price: Decimal | None = None
         #: candle-mode paper fills (backtests/replays). Live paper trading fills on order-book snapshots.
@@ -149,6 +161,10 @@ class Bot:
         self._cols_last: datetime | None = None
         #: cancel orders still open after this many seconds (live: marketable limits must not linger)
         self.order_ttl_s = order_ttl_s
+        #: live only: a candle that closed longer ago than this (wall clock) is history, not a trade trigger
+        self.max_data_age_s = max_data_age_s
+        #: set by the live runner when the feed looks broken (crossed/empty book, no new candles)
+        self.feed_stale = False
 
     # ---- main step ---------------------------------------------------------------------------
     async def on_candle(self, candle: Candle) -> None:
@@ -164,6 +180,8 @@ class Bot:
         if len(self.candles) > self.window * 2:
             self.candles = self.candles[-self.window :]
         self.last_price = candle.close
+        too_old = self.max_data_age_s is not None and (utcnow() - now).total_seconds() > self.max_data_age_s
+        self.risk.stale = too_old or self.feed_stale
         view = await self.view(now, candle.close)
 
         signals = self.risk.on_candle(view) or self.risk.exit_signals(view)
@@ -265,6 +283,7 @@ class Bot:
             return
         order = await self.executor.execute(signal, decision, view.price, tag=f"log{entry.id}")
         if order is None:
+            entry.order_status = "skipped"  # the live per-order cap left less than the market minimum
             return
         entry.order_id, entry.order_status = order.id, order.status.value
         if order.reject_reason and order.filled_qty == 0 and not order.status.is_open:
@@ -294,6 +313,7 @@ class Bot:
     def _track(self, order: Order, entry: LogEntry) -> None:
         """Apply new fills of `order` and keep watching it while it is open."""
         self._apply_order_delta(order, entry)
+        self._record_event(order, entry)
         if order.status.is_open:
             self._open[order.id] = entry
             return
@@ -301,6 +321,32 @@ class Bot:
         self._seen.pop(order.id, None)
         if order.side is Side.SELL and entry.pnl is not None:
             self.ledger.exits.append(entry.pnl)
+
+    def _record_event(self, order: Order, entry: LogEntry) -> None:
+        state = (order.status.value, order.filled_qty)
+        if self._order_state.get(order.id) == state:
+            return
+        self._order_state[order.id] = state
+        if not order.status.is_open:
+            self._order_state.pop(order.id, None)
+        avg = order.avg_price
+        self.order_events.append(
+            {
+                "timestamp_utc": (self.clock() if self.clock is not None else utcnow()).isoformat(),
+                "client_order_id": order.id,
+                "symbol": order.symbol,
+                "side": order.side.value.upper(),
+                "type": order.type.value.upper(),
+                "price": plain(order.price),
+                "quantity": plain(order.qty),
+                "status": order.status.value.upper(),
+                "filled_quantity": plain(order.filled_qty),
+                "avg_price": plain(avg),
+                "fee": plain(order.fee),
+                "fee_asset": order.fee_asset,
+                "reason": entry.note_fa,
+            }
+        )
 
     def _apply_order_delta(self, order: Order, entry: LogEntry) -> None:
         seen = self._seen.setdefault(order.id, _Seen())
@@ -367,6 +413,7 @@ class Bot:
             "halted": self.risk.halted,
             "halt_reason": self.risk.halt_reason,
             "killed": self.risk.killed,
+            "data_stale": self.risk.stale,
             "stopped": self.stopped,
             "open_orders": [o.to_dict() for o in open_orders],
             "candles_seen": len(self.equity_curve),

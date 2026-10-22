@@ -45,8 +45,12 @@ backend/zirak/
   strategy/        base.py (Strategy, Signal, StrategyContext), baseline.py (4 strategies),
                    spec.py (StrategySpec DSL + RuleStrategy), registry.py
   engine/          risk.py (RiskManager), executor.py, bot.py (one strategy on one market), runner.py (paper bot + kill switch)
-  backtest/        engine.py (replays through the same Bot), metrics.py
+  backtest/        engine.py (replays through the same Bot), metrics.py, insights.py (score, shield,
+                   time machine), drill.py (crash drill), walkforward.py (research)
   llm/             provider.py (OpenAI-compatible + mock), brief.py, builder.py, explain.py
+  agent/           THE CHALLENGE ENGINE (see "Challenge agent" below): features, setups, labeling, model,
+                   posture (LLM tools), engine, runner, journal, report, verify, tools, api, mcp_server, cli
+  modules/         optional features behind the MODULES flag (see "Modules" below)
   api/main.py      FastAPI app
   cli.py           `zirak` command
 backend/tests/     pytest; fixtures/wallex = REAL Wallex sample (default replay data),
@@ -66,19 +70,57 @@ Everything trades through `ExchangeClient` (`exchange/base.py`):
   private method calls `guard.require_live()` first (cancels/reads use `risk_reducing=True` so the kill
   switch can still cancel). It only places LIMIT orders; the Executor turns live "market" signals into
   marketable LIMIT orders capped at `LIVE_MAX_SLIPPAGE_BPS`, and the Bot cancels them after
-  `LIVE_ORDER_TTL_S`. Order fills are tracked by polling `GET /v1/account/orders/{clientOrderId}` (the
+  `LIVE_ORDER_TTL_S`. Orders are shrunk to fit `MAX_ORDER_*` at the protective price, and
+  `place_order` throttles itself to the documented 20 orders / 10 s. Order fills are tracked by polling `GET /v1/account/orders/{clientOrderId}` (the
   private WebSocket needs a browser cookie). No withdraw/transfer method, ever (a test scans the code).
 - Candles: Wallex only serves 1m / 1h / 1d reliably (`udf/history` resolutions `1`, `60`, `1D`, paged
   backwards); 5m / 15m / 4h are aggregated locally (`data/aggregate.py`).
 - `PaperExchange(data=<any client>)` — simulated fills. Candle mode: orders placed after candle t
-  fill on candle t+1 (market at open ± slippage; limits only when price trades *through*); volume
-  participation cap gives partial fills. Book mode: market orders walk the book.
+  fill on candle t+1 (market at open ± slippage; a limit that is marketable on arrival fills as taker
+  at the open, capped by its limit; a resting limit fills as maker at its own price only when price
+  trades *through* it); all orders on a candle share one volume-participation cap (partial fills).
+  Book mode: market orders walk the book; first-pass crossing limits are takers at the level price.
 - `ReplayExchange` — recorded/sample data behind a time cursor that only exposes *closed* candles.
 - `Executor` re-checks `require_live` + `check_hard_limits` for any real client (belt and braces).
 
 Data flow per closed candle (`engine/bot.py`): paper matching → sync fills into the ledger →
 RiskManager day roll / daily loss limit → SL/TP → strategy signals → `RiskManager.review` →
 `Executor` → log entry (signal, indicators, decision, fill, PnL) for "why did the bot do that?".
+
+## Challenge agent (`zirak/agent/`, docs/ALGORITHM.md, docs/challenge/)
+The Wallex challenge entry: many Toman markets, one (credit) account, decided per closed bar
+(`config/challenge.json`: 15m). Pipeline per bar: setups (explainable candidates) → `MetaModel`
+(meta-labeler: P(win) after costs, EV gate, fractional Kelly) → `Posture` (LLM tool-calling agent,
+hourly; rule fallback) → `Agent.check_guard` (daily loss, peak drawdown, credit-plan liquidation cushion,
+challenge clock) → `Agent.size` (hard caps) → maker-first LIMIT entries, resting take-profit, stops checked
+every poll in live, time stops, exit TTL re-pricing, end-of-challenge flatten (the challenge scores
+*realised Toman*). Same `Agent` in backtest (`runner.run_backtest`, walk-forward retraining), shadow and
+live (`runner.run_live`, restore + `reconcile`). Every run: `data/runs/<run>/` (decisions.jsonl = the
+decision log, postures, orders with latency, trades, equity, state, manifest with commit, models/).
+`zirak agent verify` recomputes every logged AI verdict. Rules: the AI never places orders or bypasses
+caps; only Toman markets are tradable; keep `test_agent.py` green (causality, determinism, guard, flatten,
+restart). Credit-account calls are read-only (docs/wallex-api/credit-account.md).
+
+## Modules (optional, `MODULES` env flag; default all)
+Each module is one backend file in `zirak/modules/` exposing `router` (mounted at `/api/m/<name>`),
+one test block in `tests/test_modules.py`, and one card in `frontend/src/components/modules/`
+shown on `/tools` only when `/api/modules` lists it. Modules read data through the API `State`,
+work offline (MOCK_LLM, replay data), and never place orders (competition runs paper bots).
+To switch one off: drop its name from `MODULES`. To remove it: delete its file, test block, entry in
+`modules/__init__.py` `AVAILABLE`, and its card (a missing file is treated as switched off).
+
+| Module | What | Extra flags | Files |
+|---|---|---|---|
+| `regime` | trending/ranging/volatile; `RegimeGated` blocks entries outside allowed regimes | — | `modules/regime.py`, `RegimeCard.tsx` |
+| `orderbook` | spread, depth, imbalance, walls, fair Toman price of USDT | — | `modules/orderbook.py`, `BookCard.tsx` |
+| `news` | mock or RSS/Atom headlines, keyword sentiment, Persian summary | `NEWS_SOURCE`, `NEWS_RSS_URLS`, `NEWS_RISK` | `modules/news.py`, `NewsCard.tsx` |
+| `portfolio` | target allocation + threshold rebalancing backtest, `/suggest` | — | `modules/portfolio.py`, `PortfolioCard.tsx` |
+| `alerts` | price/RSI/bot-PnL alerts, in-app + Telegram/Bale | `ALERTS_*` | `modules/alerts.py`, `AlertsCard.tsx` |
+| `coach` | deterministic trade-habit findings, Persian feedback | — | `modules/coach.py`, `CoachCard.tsx` |
+| `competition` | multi-strategy paper sleeves, team limits, `performance.json` | — | `modules/competition.py`, `zirak compete`, `CompetitionCard.tsx` |
+
+The only core hooks modules use: `RiskManager.size_factor` (0..1, shrinks new buys; news) and
+`ReplayExchange.fork()` (independent cursor; competition).
 
 ## How to add a strategy
 1. Subclass `Strategy` in `strategy/` (see `baseline.py`): set `key`, `title_fa`, `description_fa`,
@@ -89,12 +131,16 @@ RiskManager day roll / daily loss limit → SL/TP → strategy signals → `Risk
 3. Register it in `strategy/registry.py` (`STRATEGIES` + `DEFAULT_PARAMS`).
 4. Add a test (at least: it trades on the sample data and never sees unclosed candles).
 
-## Commands (from `backend/`, venv active or prefix `.venv/Scripts/`)
+## Commands (from `backend/`, venv active or prefix `.venv/Scripts/` — `.venv/bin/` on Linux/macOS)
 ```bash
 zirak data-stats                                   # what data is available
 zirak backtest --strategy ema_cross --symbol BTCTMN --resolution 1h
 zirak backtest --spec '{"symbol":"BTCTMN","entry":[{"kind":"drop_from_high","pct":5,"lookback":24}],"position_size_pct":10,"take_profit_pct":3,"stop_loss_pct":5}'
 zirak paper --strategy rsi_reversion --symbol ETHTMN --speed 0.2   # headless paper bot on replayed data
+zirak agent backtest --config config/sample-1h.json --days 30   # challenge agent, walk-forward
+zirak agent train | shadow | live --i-understand-this-is-real-money | report | verify | export | probe | flatten
+zirak mcp                                          # read-only MCP server for AI agents
+zirak compete [--config cfg.json] [--speed 0.2]    # competition mode (paper, team limits, perf file)
 zirak kill                                         # KILL SWITCH (KILL file + API call)
 zirak reset-kill
 zirak serve --reload                               # API on :8000
@@ -110,6 +156,8 @@ Frontend (from `frontend/`): `npm run dev` (http://localhost:3000; reads `NEXT_P
   `DATA_SOURCE=replay` replays recorded data (DB, else the real sample) — works offline.
   `DATA_SOURCE=wallex` = paper trading on LIVE Wallex data: signals on real closed candles, paper fills
   walk the real order book (`BotRunner._live_loop`, polls every `LIVE_POLL_S`).
+  Stale data (candle closed > `STALE_DATA_S` ago, silent feed, empty/crossed book) blocks new buys;
+  10 consecutive data failures stop the bot via the kill path.
 - Live money: `LIVE_TRADING=true`, `MAX_ORDER_TMN`,
   `MAX_ORDER_USDT`, `DAILY_LOSS_LIMIT_PCT`, `WALLEX_API_KEY`, and no KILL file. `/api/health`
   lists any remaining `live_blockers`. Never turn live on without the user confirming risk limits.

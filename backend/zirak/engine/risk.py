@@ -1,8 +1,9 @@
 """RiskManager: the deterministic gate between a strategy's ideas and real orders.
 
 It sizes every buy, enforces max exposure, the per-order cap, stop-loss / take-profit, the daily loss
-limit (halts new buys for the rest of the UTC day, optionally flattening), cooldown after exits, and the
-market's precision / minimum order size. Sells that reduce risk are allowed even while halted.
+limit (halts new buys for the rest of the UTC day, optionally flattening), cooldown after exits, stale
+market data (no new buys), and the market's precision / minimum order size. Sells that reduce risk are
+allowed even while halted.
 """
 
 from __future__ import annotations
@@ -86,6 +87,11 @@ class RiskManager:
         self.halted = False
         self.halt_reason = ""
         self.killed = False
+        #: market data is too old to trust (set by the Bot / live runner): no new buys until it is fresh
+        self.stale = False
+        #: 0..1 multiplier on new buy sizes set by optional inputs (e.g. very negative news). Never > 1.
+        self.size_factor = ONE
+        self.size_factor_note_fa = ""
         self.candle_index = 0
         self.cooldown_until = -1
 
@@ -178,6 +184,13 @@ class RiskManager:
                 self.halt_reason or "halted",
                 ["به سقف زیان روزانه رسیده‌ایم؛ تا فردا خرید جدید انجام نمی‌شود."],
             )
+        if self.stale:
+            return RiskDecision(
+                False,
+                ZERO,
+                "stale_data",
+                ["داده‌های بازار به‌روز نیست؛ تا رسیدن دادهٔ تازه خرید جدید انجام نمی‌شود."],
+            )
         if self.candle_index <= self.cooldown_until:
             return RiskDecision(False, ZERO, "cooldown", ["دورهٔ استراحت بعد از فروش هنوز تمام نشده است."])
         if view.price <= 0 or view.equity <= 0:
@@ -193,6 +206,10 @@ class RiskManager:
                 "max_exposure",
                 [f"سهم این دارایی از سرمایه به سقف {fa_pct(self.cfg.max_position_pct, 0)} رسیده است."],
             )
+        factor = min(max(self.size_factor, ZERO), ONE)
+        if factor < ONE:
+            want = want * factor
+            notes.append(self.size_factor_note_fa or f"حجم خرید به {fa_pct(factor * HUNDRED, 0)} کاهش یافت.")
         quote = want
         if quote > room:
             quote = room

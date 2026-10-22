@@ -121,3 +121,32 @@ def test_full_exit_leaves_ledger_flat(market: Market) -> None:
     assert D(report["open_position_qty"]) == 0
     assert report["metrics"]["exposure_pct"] < 50
     assert all(t["reason"] != "stop_loss" for t in report["trades"])
+
+
+class AlwaysBuy(Strategy):
+    key = "always_buy"
+
+    def on_candle(self, ctx: StrategyContext) -> list[Signal]:
+        return [Signal(Side.BUY, D("20"), "dip", "buy")]
+
+
+def test_daily_loss_limit_halts_the_whole_pipeline(market: Market) -> None:
+    """End to end: once today's loss crosses the limit the bot flattens and places no new buys today."""
+    prices = [100, 100, 100, 90, 80, 75, 75, 75, 75, 75]  # all within one UTC day (hourly candles)
+    candles = [candle(i, str(p), str(p), str(p), str(p), "100000") for i, p in enumerate(prices)]
+    risk = RiskConfig(stop_loss_pct=None, daily_loss_limit_pct=D("3"), max_position_pct=D("100"))
+    report = run_backtest(candles, setup_for(market, AlwaysBuy(), risk))
+    trades = report["trades"]
+    halt = next(i for i, t in enumerate(trades) if t["reason"] == "daily_loss_limit")
+    assert trades[halt]["side"] == "sell" and trades[halt]["decision"]["approved"]
+    later_buys = [t for t in trades[halt + 1 :] if t["side"] == "buy"]
+    assert later_buys and all(not t["decision"]["approved"] for t in later_buys)
+    assert {t["decision"]["code"] for t in later_buys} == {"daily_loss_limit"}
+    assert D(report["open_position_qty"]) == 0
+
+
+def test_plain_decimal_text() -> None:
+    from zirak.engine.bot import plain
+
+    assert plain(D("2.99375E-7")) == "0.000000299375"
+    assert plain(D("20887049125")) == "20887049125" and plain(D("1.500")) == "1.5" and plain(None) == ""

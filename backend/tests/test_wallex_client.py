@@ -303,3 +303,99 @@ def test_balances_free_is_value_minus_locked(tmp_path: Path) -> None:
     bal = {"balances": {"TMN": {"asset": "TMN", "value": "16033085", "locked": "2507491"}}}
     out = run(client(live(tmp_path), Fake({"GET /v1/account/balances": ok(bal)})).get_balances())
     assert out["TMN"].free == D("13525594") and out["TMN"].total == D("16033085")
+
+
+def test_order_placement_is_throttled_to_the_documented_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import time
+
+    import zirak.exchange.wallex as wallex_mod
+
+    monkeypatch.setattr(wallex_mod, "ORDER_RATE_LIMIT", (2, 0.3))  # docs: 20 per 10 s; scaled down
+    fake = Fake(
+        {"POST /v1/account/orders": lambda _r: httpx.Response(201, json={"result": ORDER, "success": True})}
+    )
+    c = client(live(tmp_path), fake)
+    req = OrderRequest("USDTTMN", Side.BUY, OrderType.LIMIT, D("10"), D("268000"))
+
+    async def three() -> float:
+        t0 = time.monotonic()
+        for _ in range(3):
+            await c.place_order(req)
+        return time.monotonic() - t0
+
+    assert run(three()) >= 0.25  # the third order waited for the window to slide
+    assert len(fake.calls) == 3
+
+
+def test_low_rate_limit_remaining_slows_down(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
+    slept: list[float] = []
+
+    async def fake_sleep(s: float) -> None:
+        slept.append(s)
+
+    monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+    fake = Fake(
+        {
+            "GET /v1/depth": lambda _r: httpx.Response(
+                200,
+                json={"result": {"bid": [], "ask": []}, "success": True},
+                headers={"x-ratelimit-remaining": "2"},
+            )
+        }
+    )
+    c = client(settings, fake)
+    run(c.get_order_book("BTCTMN"))
+    assert slept == []
+    run(c.get_order_book("BTCTMN"))
+    assert slept == [1.0]
+
+
+def test_credit_account_balances_and_package_limits(tmp_path: Path) -> None:
+    s = replace(live(tmp_path), wallex_credit_account=True, wallex_sub_account_client_id="sub-1")
+    fake = Fake(
+        {
+            "GET /v1/account/balances-detail": ok(
+                {
+                    "TMN": {"symbol": "TMN", "total": "5000000", "freeze": "250000", "available": "4750000"},
+                    "BTC": {"symbol": "BTC", "total": "0.001", "freeze": "0", "available": "0.001"},
+                }
+            ),
+            "GET /v1/prop/user/packages/active": ok(
+                {
+                    "packageDetail": {"startBalance": "5000000", "currency": "TMN"},
+                    "userPackageDetail": {
+                        "status": "active",
+                        "warningLimit": "4800000",
+                        "liquidityLimit": "4700000",
+                        "profit": "12000",
+                        "profitPercentage": "0.24",
+                    },
+                }
+            ),
+            "GET /v1/prop/packages/7": ok({"detail": {"id": 7}, "unavailableMarkets": ["WTMN", "METMN"]}),
+        }
+    )
+    c = client(s, fake)
+    bal = run(c.get_balances())
+    assert (
+        bal["TMN"].free == D("4750000")
+        and bal["TMN"].locked == D("250000")
+        and bal["TMN"].total == D("5000000")
+    )
+    assert bal["BTC"].free == D("0.001")
+    assert fake.calls[0].headers["sub-account-client-id"] == "sub-1"
+    pkg = run(c.get_active_package())
+    assert pkg["liquidity_limit"] == D("4700000") and pkg["start_balance"] == D("5000000")
+    assert run(c.get_unavailable_markets("7")) == ["WTMN", "METMN"]
+    with pytest.raises(ValueError):
+        run(c.get_unavailable_markets("7/../x"))
+
+
+def test_credit_calls_are_guarded_without_a_key(settings: Settings) -> None:
+    c = client(settings, Fake({}))
+    with pytest.raises(LiveTradingDisabled):
+        run(c.get_balances_detail())
+    with pytest.raises(LiveTradingDisabled):
+        run(c.get_active_package())
