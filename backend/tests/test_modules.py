@@ -174,3 +174,122 @@ def test_module_routes_and_flags(tmp_path: Path) -> None:
     with TestClient(create_app(settings(tmp_path, modules=["regime"]))) as c:
         assert c.get("/api/modules").json()["enabled"] == ["regime"]
         assert c.get("/api/m/news").status_code == 404  # switched off
+
+
+# ---- portfolio ----------------------------------------------------------------------------------
+def test_portfolio_rebalances_honestly() -> None:
+    from zirak.markets import DEFAULT_MARKETS
+    from zirak.modules import portfolio
+
+    btc = series([3_000_000_000 * (1.01**i) for i in range(60)])  # BTC rallies +80 %
+    usdt = series([100_000.0] * 60)
+    markets = {m: DEFAULT_MARKETS[m] for m in ("BTCTMN", "USDTTMN")}
+    targets = {"TMN": D(0), "USDT": D(50), "BTC": D(50)}
+    r = portfolio.backtest({"BTC": btc, "USDT": usdt}, targets, markets, D("100000000"), D("0.0025"), D("5"))
+    assert r["rebalances"], "a +80 % rally must trigger rebalancing"
+    first = r["rebalances"][0]
+    assert first["trades"][0]["asset"] == "BTC" and first["trades"][0]["side"] == "sell"  # sell the winner
+    assert "بیت‌کوین" in first["note_fa"]
+    held = {a: D(q) for a, q in r["final_holdings"].items()}
+    assert all(q >= 0 for q in held.values())
+    assert D(r["fees_tmn"]) > 0
+    # Rebalancing a one-way rally gives up some upside vs holding: reported, not hidden.
+    assert r["rebalanced"]["return_pct"] < r["hold"]["return_pct"]
+
+
+def test_portfolio_api(tmp_path: Path) -> None:
+    with TestClient(create_app(settings(tmp_path))) as c:
+        r = c.post("/api/m/portfolio/backtest", json={}).json()
+        assert "rebalanced" in r and "hold" in r and r["curve"]
+        s = c.post(
+            "/api/m/portfolio/suggest",
+            json={"targets": {"TMN": 50, "BTC": 50}, "holdings": {"TMN": 100_000_000, "BTC": 0}},
+        ).json()
+        assert s["orders"] and s["orders"][0]["side"] == "buy" and "پیشنهاد" in s["note_fa"]
+        bad = c.post("/api/m/portfolio/backtest", json={"targets": {"DOGE": 100}})
+        assert bad.status_code == 422
+
+
+# ---- alerts -------------------------------------------------------------------------------------
+def test_alert_conditions_and_external_channels(tmp_path: Path) -> None:
+    from zirak.modules import alerts
+
+    assert alerts.condition_met("price_above", 10, 11) and not alerts.condition_met("price_above", 10, 9)
+    assert alerts.condition_met("rsi_below", 30, 25) and not alerts.condition_met("rsi_below", 30, None)
+    sent: list[str] = []
+
+    def handler(r: httpx.Request) -> httpx.Response:
+        sent.append(str(r.url))
+        return httpx.Response(200, json={"ok": True})
+
+    s = settings(
+        tmp_path,
+        alerts_telegram_token="T",
+        alerts_telegram_chat_id="1",
+        alerts_bale_token="B",
+        alerts_bale_chat_id="2",
+    )
+    channels = asyncio.run(alerts.notify(s, "hi", httpx.MockTransport(handler)))
+    assert channels == ["in_app", "telegram", "bale"]
+    assert sent == ["https://api.telegram.org/botT/sendMessage", "https://tapi.bale.ai/botB/sendMessage"]
+    assert asyncio.run(alerts.notify(settings(tmp_path), "hi")) == ["in_app"]  # nothing configured: no I/O
+
+
+def test_alerts_api_fire_once_and_persist(tmp_path: Path) -> None:
+    s = settings(tmp_path, alerts_interval_s=0)
+    with TestClient(create_app(s)) as c:
+        a = c.post("/api/m/alerts", json={"symbol": "BTCTMN", "kind": "price_above", "value": 1}).json()
+        c.post("/api/m/alerts", json={"symbol": "BTCTMN", "kind": "price_below", "value": 1})
+        fired = c.post("/api/m/alerts/check").json()["fired"]
+        assert [f["alert_id"] for f in fired] == [a["id"]] and "توصیهٔ مالی نیست" in fired[0]["message_fa"]
+        assert c.post("/api/m/alerts/check").json()["fired"] == []  # `once`: deactivated
+        listing = c.get("/api/m/alerts").json()
+        assert len(listing["alerts"]) == 2 and listing["events"] and not listing["channels"]["telegram"]
+    with TestClient(create_app(s)) as c:  # persisted across restarts
+        assert len(c.get("/api/m/alerts").json()["alerts"]) == 2
+        assert c.delete(f"/api/m/alerts/{a['id']}").json()["deleted"]
+
+
+# ---- coach --------------------------------------------------------------------------------------
+def test_coach_finds_fomo_panic_and_big_losses() -> None:
+    from zirak.modules import coach
+
+    # Price: rally 100 -> 110 over a day, crash to 90, recover to 100.
+    closes = [100 + i * 10 / 24 for i in range(25)] + [110 - i * 20 / 24 for i in range(1, 25)]
+    closes += [90 + i * 10 / 24 for i in range(1, 25)]
+    candles = series(closes)
+
+    def at(h: int) -> datetime:
+        return T0 + timedelta(hours=h)
+
+    trades = [
+        coach.TradeIn(at(24), "buy", 110, 1, 0.3),  # bought the top after +10 % in a day
+        coach.TradeIn(at(48), "sell", 90, 1, 0.2),  # sold the bottom after -18 %, recovered next day
+    ]
+    findings = {f.code: f for f in coach.review(trades, candles)}
+    assert {"chasing_pumps", "panic_selling", "no_stop_loss"} <= set(findings)
+    assert findings["chasing_pumps"].examples == [0] and findings["panic_selling"].examples == [1]
+    out = asyncio.run(coach.coach(trades, candles, MockLLM()))
+    assert out["score"] < 60 and "توصیهٔ مالی نیست" in out["summary_fa"]
+    calm = [coach.TradeIn(at(10), "buy", 104.17, 1), coach.TradeIn(at(20), "sell", 108.33, 1)]
+    assert [f.code for f in coach.review(calm, candles)] == ["disciplined"]
+
+
+def test_coach_round_trips_average_cost() -> None:
+    from zirak.modules import coach
+
+    t = [
+        coach.TradeIn(T0, "buy", 100, 1),
+        coach.TradeIn(T0 + timedelta(hours=1), "buy", 80, 1),
+        coach.TradeIn(T0 + timedelta(hours=2), "sell", 99, 2),
+    ]
+    (rt,) = coach.round_trips(t)
+    assert rt.pnl == 18 and round(rt.pnl_pct, 3) == 10.0
+
+
+def test_coach_api_on_the_emotional_trader(tmp_path: Path) -> None:
+    with TestClient(create_app(settings(tmp_path))) as c:
+        r = c.post("/api/m/coach", json={"source": "emotional"}).json()
+        assert r["trades"] > 0 and r["findings"] and 0 <= r["score"] <= 100
+        assert c.post("/api/m/coach", json={"source": "bot"}).status_code == 404
+        assert c.post("/api/m/coach", json={"source": "backtest", "report_id": "../x"}).status_code == 404
