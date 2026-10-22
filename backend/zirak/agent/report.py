@@ -81,6 +81,8 @@ def build_report(run_dir: Path, cfg: AgentConfig, mode: str) -> dict[str, Any]:
         "end_equity_tmn": round(end),
         "return_pct": round((end / start - 1) * 100, 3) if start else 0.0,
         "realized_pnl_tmn": round(sum(pnl)),
+        # the challenge scores realised Toman: P&L of closed trades only, open positions excluded
+        "realized_return_pct": round(sum(pnl) / start * 100, 3) if start else 0.0,
         "max_drawdown_pct": round(max_dd, 3),
         "trades": len(trades),
         "win_rate_pct": round(100 * len(wins) / len(trades), 1) if trades else None,
@@ -121,7 +123,8 @@ def report_markdown(r: dict[str, Any]) -> str:
         "",
         "| Metric | Value |",
         "|---|---|",
-        f"| Return (net, Toman) | {r['return_pct']:+.3f} % |",
+        f"| Return, realised (closed trades, Toman) | {r['realized_return_pct']:+.3f} % |",
+        f"| Return, mark-to-market | {r['return_pct']:+.3f} % |",
         f"| Start → end equity | {r['start_equity_tmn']:,} → {r['end_equity_tmn']:,} TMN |",
         f"| Realised P&L | {r['realized_pnl_tmn']:,} TMN |",
         f"| Max drawdown | {r['max_drawdown_pct']:.3f} % |",

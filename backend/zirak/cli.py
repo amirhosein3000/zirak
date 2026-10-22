@@ -466,6 +466,10 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("--days-1d", type=float, default=400)
     sp.set_defaults(fn=cmd_export_sample)
 
+    from zirak.agent.cli import add_parser as add_agent_parser
+
+    add_agent_parser(sub)
+
     args = p.parse_args(argv)
     code: int = args.fn(args)
     return code

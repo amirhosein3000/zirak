@@ -17,6 +17,7 @@ Hard limits live here and in the exchange guard; neither the ML model nor the LL
 
 from __future__ import annotations
 
+import math
 import time as _time
 from collections.abc import Awaitable, Callable
 from dataclasses import asdict, dataclass, field
@@ -210,6 +211,12 @@ class Agent:
         self.bar_index = int(state.get("bar_index", 0))
         if state.get("posture"):
             self.posture = Posture.from_dict(state["posture"])
+
+    def save_model(self) -> None:
+        """Keep every model the run used (by id) so `zirak agent verify` can recompute its verdicts."""
+        target = self.journal.dir / "models" / self.model.card.model_id
+        if not target.exists():
+            self.model.save(target)
 
     def _save(self) -> None:
         self.journal.save_state(self.snapshot_state())
@@ -553,6 +560,7 @@ class Agent:
             fresh = await self.trainer(now)
             if fresh is not None:
                 self.model = fresh
+                self.save_model()
                 self.journal.decision(
                     {
                         "ts": now,
@@ -637,6 +645,7 @@ class Agent:
                     "sl_pct": cand.sl_pct,
                     "max_bars": cand.max_bars,
                     "indicators": cand.indicators,
+                    "features": {k: (None if math.isnan(x) else x) for k, x in feats.items()},
                     "signal_fa": cand.reason_fa,
                     "model": {
                         "id": self.model.card.model_id,
@@ -646,7 +655,7 @@ class Agent:
                         "kelly": v.kelly,
                         "size_mult": v.size_mult,
                         "why": v.why,
-                        "cost_pct": round(cost, 4),
+                        "cost_pct": cost,
                     },
                     "posture": {
                         "stance": mp.stance,

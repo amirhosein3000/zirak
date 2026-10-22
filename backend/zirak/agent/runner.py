@@ -23,12 +23,14 @@ from zirak.agent.labeling import Costs, build_dataset
 from zirak.agent.model import MetaModel
 from zirak.agent.posture import Posture, PostureAgent
 from zirak.agent.report import build_report
+from zirak.agent.tools import make_tools
 from zirak.config import Settings
 from zirak.engine.bot import SimClock
 from zirak.exchange.base import ExchangeClient
 from zirak.exchange.paper import PaperExchange
 from zirak.exchange.replay import ReplayExchange
 from zirak.fees import FeeModel
+from zirak.llm.provider import ToolLLM
 from zirak.models import Candle, Market, Side, resolution_delta, utcnow
 
 
@@ -113,6 +115,7 @@ async def run_backtest(
         trainer=trainer if walk_forward and model is None else None,
     )
     agent.precomputed = {s: feature_frame(series[s], implied_closes(series, s)) for s in cfg.markets}
+    agent.save_model()
     journal.manifest(
         {
             "mode": "backtest",
@@ -148,7 +151,7 @@ async def run_live(
     mode: str,
     data: ExchangeClient,
     model: MetaModel,
-    posture_agent: PostureAgent | None = None,
+    posture_llm: ToolLLM | None = None,
     stop_after_s: float | None = None,
     on_status: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
 ) -> dict[str, Any]:
@@ -195,9 +198,10 @@ async def run_live(
     else:
         exchange = data
     journal = Journal(run_dir)
-    agent = Agent(
-        cfg, exchange, markets, model, journal, costs, clock, settings, posture_agent, package=package
-    )
+    agent = Agent(cfg, exchange, markets, model, journal, costs, clock, settings, package=package)
+    agent.save_model()
+    if posture_llm is not None:
+        agent.posture_agent = PostureAgent(posture_llm, make_tools(agent, data), cfg.markets)
     state = journal.load_state()
     if state:
         agent.restore(state)

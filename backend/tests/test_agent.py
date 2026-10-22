@@ -408,3 +408,104 @@ def test_config_rejects_coin_quoted_markets_and_unknown_setups() -> None:
     with pytest.raises(ValueError):
         AgentConfig.model_validate({"setups": ["yolo"]})
     assert replace(Costs(0.0025, 0.002, 0.0005)).round_trip_pct() == pytest.approx(0.6)
+
+
+# ---- shadow mode, verify, export, MCP --------------------------------------------------------------
+class FakeWallexData(ReplayExchange):
+    """Serves the sample candles as if live: every call releases one more closed candle."""
+
+    def __init__(self) -> None:
+        raw = load_candle_dir(SAMPLE_DATA_DIR)
+        add_derived(raw)
+        super().__init__(raw, markets=dict(DEFAULT_MARKETS))
+        self.released = 700
+
+    async def get_candles(
+        self, symbol: str, resolution: str, start: Any = None, end: Any = None
+    ) -> list[Candle]:
+        if symbol == "BTCTMN":
+            self.released += 1
+        return self.series(symbol, resolution)[: self.released]
+
+
+def test_shadow_run_trades_on_new_bars_journals_and_resumes(tmp_path: Path) -> None:
+    from zirak.agent.runner import run_live
+
+    settings = Settings(data_dir=tmp_path, kill_file=tmp_path / "KILL")
+    cfg = AgentConfig.model_validate({"execution": {"poll_s": 1}})
+    data = FakeWallexData()
+    report = asyncio.run(
+        run_live(cfg, settings, tmp_path / "shadow", "shadow", data, MetaModel(), stop_after_s=2.5)
+    )
+    assert report["mode"] == "shadow" and report["period"]["bars"] >= 2
+    bars_log = Journal(tmp_path / "shadow").read("bars.jsonl")
+    assert bars_log and "latency_ms" in bars_log[0]
+    manifest = json.loads((tmp_path / "shadow" / "manifest.json").read_text())
+    assert manifest["mode"] == "shadow" and manifest["resumed"] is False
+    asyncio.run(run_live(cfg, settings, tmp_path / "shadow", "shadow", data, MetaModel(), stop_after_s=1.2))
+    assert json.loads((tmp_path / "shadow" / "manifest.json").read_text())["resumed"] is True
+
+
+def test_kill_file_stops_a_shadow_run(tmp_path: Path) -> None:
+    from zirak.agent.runner import run_live
+
+    settings = Settings(data_dir=tmp_path, kill_file=tmp_path / "KILL")
+    settings.kill_file.write_text("x")
+    cfg = AgentConfig.model_validate({"execution": {"poll_s": 1}})
+    asyncio.run(
+        run_live(cfg, settings, tmp_path / "k", "shadow", FakeWallexData(), MetaModel(), stop_after_s=30)
+    )
+    kinds = [d["kind"] for d in Journal(tmp_path / "k").read("decisions.jsonl")]
+    assert "kill" in kinds
+
+
+def test_verify_export_and_report_cli(tmp_path: Path) -> None:
+    from zirak.agent.verify import verify_run
+    from zirak.cli import main
+
+    series = sample_series()
+    settings = Settings(data_dir=tmp_path, kill_file=tmp_path / "KILL")
+    cfg = AgentConfig.model_validate({"model": {"retrain_hours": 240}})
+    asyncio.run(run_backtest(cfg, series, {s: DEFAULT_MARKETS[s] for s in series}, settings, tmp_path / "v"))
+    result = verify_run(tmp_path / "v")
+    assert result["ok"] and result["reproduced_pct"] == 100.0 and result["models_used"]
+    # tampering with a logged probability is caught
+    path = tmp_path / "v" / "decisions.jsonl"
+    rows = [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines()]
+    first = next(r for r in rows if r["kind"] == "candidate")
+    first["model"]["prob"] = 0.99
+    path.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", encoding="utf-8")
+    assert not verify_run(tmp_path / "v")["ok"]
+    assert main(["agent", "export", str(tmp_path / "v")]) == 0
+    assert (tmp_path / "v" / "decisions.csv").read_text(encoding="utf-8-sig").startswith("id,ts,kind")
+    assert main(["agent", "report", str(tmp_path / "v")]) == 0
+    assert "realised" in (tmp_path / "v" / "report.md").read_text(encoding="utf-8")
+
+
+def test_mcp_server_is_read_only(tmp_path: Path) -> None:
+    from zirak.agent.mcp_server import build_server
+
+    settings = Settings(data_dir=tmp_path, kill_file=tmp_path / "KILL", replay_dir=SAMPLE_DATA_DIR)
+    series = sample_series()
+    cfg = AgentConfig.model_validate({"model": {"retrain_hours": 240}})
+    asyncio.run(
+        run_backtest(cfg, series, {s: DEFAULT_MARKETS[s] for s in series}, settings, tmp_path / "runs" / "r1")
+    )
+    server = build_server(settings)
+    names = {t.name for t in asyncio.run(server.list_tools())}
+    assert names == {
+        "market_snapshot",
+        "list_runs",
+        "run_report",
+        "recent_decisions",
+        "explain_decision",
+        "verify",
+        "model_card",
+    }
+    assert not any(w in n for n in names for w in ("order", "buy", "sell", "cancel", "withdraw", "transfer"))
+    runs = asyncio.run(server.call_tool("list_runs", {}))
+    assert "r1" in json.dumps(
+        [getattr(c, "text", "") for c in runs[0]] if isinstance(runs, tuple) else str(runs)
+    )
+    snap = asyncio.run(server.call_tool("market_snapshot", {"symbol": "BTCTMN"}))
+    assert "rsi_14" in str(snap)
