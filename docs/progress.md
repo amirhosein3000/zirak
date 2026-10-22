@@ -1,6 +1,6 @@
 # Progress
 
-_Last updated: 2026-10-22_
+_Last updated: 2026-10-22 (hero features)_
 
 ## Done
 - [x] Name: **Zirak (زیرک)**. Private repo github.com/amirhosein3000/zirak (renamed from Tarazoo on 2026-10-21).
@@ -24,7 +24,20 @@ _Last updated: 2026-10-22_
 - [x] **Paper trading on live Wallex data** (`DATA_SOURCE=wallex`): verified via CLI (USDTTMN 1m) and API
       (ETHUSDT 1m): fills at the real ask, fee in the received asset, kill switch cancels and stops
 - [x] Live-order safety: marketable LIMIT with `LIVE_MAX_SLIPPAGE_BPS` cap, unfilled orders canceled after `LIVE_ORDER_TTL_S`
-- [x] Quality gates green: ruff, mypy --strict (54 files), **84 pytest tests** (network-free), eslint, tsc
+- [x] **Hero features** (2026-10-22): Zirak Score (0-100 + grade + Persian verdict), risk-shield counterfactual
+      (same strategy without the risk manager), time machine (period chips incl. "worst crash" found in the
+      data), strategy duel vs baselines + an emotional FOMO/panic trader + buy-and-hold, market mood gauge,
+      buy/sell/blocked markers on price charts, live-money banner + shield counter on the dashboard
+- [x] **Real-money mode ready (not yet used)**: `/safety` page with pre-flight checklist and typed confirmation;
+      `/api/live/start`; LIMIT orders priced off the live book, capped by `MAX_ORDER_*`, canceled after a TTL;
+      read-only/cancel calls need only the key. Tested end to end against a mocked Wallex.
+- [x] Backtests 3-10x faster (lazy frames, numpy EMA/RSI): a 90-day 1h backtest takes ~0.7 s; duel ~5 s
+- [x] Quality gates green: ruff, mypy --strict, **92 pytest tests** (network-free), eslint, tsc, next build
+
+## Demo story (real Wallex data)
+Time machine on BTCTMN finds the real ~36 % crash (Ordibehesht–Tir 1405). The example sentence
+«وقتی بیت‌کوین ۵٪ ریخت، با ۱۰٪ سرمایه بخر و با ۳٪ سود بفروش» scores 82 (A): −1.2 % vs −19.3 % buy-and-hold,
+max drawdown 2.3 % vs 36 %; the duel ranks it #1 of 7, the emotional trader 6th, buy-and-hold last.
 
 ## Next
 1. Prompt 1 from the prompts file: verify and harden (money maths audit, stale-data detection, resilience).
