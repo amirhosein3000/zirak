@@ -30,6 +30,8 @@ class MarketFacts:
     book_imbalance_pct: float | None  # +: more bids than asks within 1% of mid
     spread_pct: float | None
     book_synthetic: bool
+    mood_score: int = 50  # 0 = extreme fear ... 100 = euphoria (Zirak's own gauge, not advice)
+    mood_fa: str = "خنثی"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -67,7 +69,10 @@ def compute_facts(market: Market, candles: list[Candle], book: OrderBook | None)
             imbalance = (bids - asks) / (bids + asks) * 100
         if book.best_ask is not None and book.best_bid is not None:
             spread = float(book.best_ask - book.best_bid) / mid * 100
+    mood = mood_score(trend, last(rsi(close, 14)), (price / ref - 1) * 100, imbalance)
     return MarketFacts(
+        mood_score=mood,
+        mood_fa=mood_label(mood),
         symbol=market.symbol,
         name_fa=market_name_fa(market),
         price=price,
@@ -84,6 +89,27 @@ def compute_facts(market: Market, candles: list[Candle], book: OrderBook | None)
         spread_pct=spread,
         book_synthetic=bool(book.synthetic) if book is not None else True,
     )
+
+
+def _clip(x: float, lim: float) -> float:
+    return max(-lim, min(lim, x))
+
+
+def mood_score(trend: str, rsi14: float | None, change_24h: float, imbalance: float | None) -> int:
+    """Zirak's market mood, 0-100, from trend, momentum, 24h move and order-book pressure."""
+    score = 50.0
+    score += {"up": 15, "down": -15}.get(trend, 0)
+    score += _clip(((rsi14 or 50) - 50) * 0.6, 15)
+    score += _clip(change_24h * 3, 12)
+    score += _clip((imbalance or 0) * 0.08, 8)
+    return round(max(0.0, min(100.0, score)))
+
+
+MOOD_LABELS = [(80, "هیجان و طمع"), (60, "خوش‌بینی"), (40, "خنثی"), (20, "ترس"), (0, "ترس شدید")]
+
+
+def mood_label(score: int) -> str:
+    return next(label for floor, label in MOOD_LABELS if score >= floor)
 
 
 TREND_FA = {"up": "صعودی", "down": "نزولی", "range": "خنثی (رنج)"}

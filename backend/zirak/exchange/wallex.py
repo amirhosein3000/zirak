@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import json
 import secrets
+import time
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -105,6 +106,7 @@ class WallexClient(ExchangeClient):
         )
         self._markets: dict[str, Market] = {}
         self.rate_limit_remaining: int | None = None
+        self._balances_cache: tuple[float, dict[str, Balance]] | None = None
 
     async def close(self) -> None:
         await self._client.aclose()
@@ -237,12 +239,15 @@ class WallexClient(ExchangeClient):
     # ---- private: guarded --------------------------------------------------------------------
     async def get_balances(self) -> dict[str, Balance]:
         require_live(self.settings, risk_reducing=True)
+        if self._balances_cache and time.monotonic() - self._balances_cache[0] < 3:
+            return self._balances_cache[1]
         data = await self._request("GET", "/v1/account/balances")
         out: dict[str, Balance] = {}
         for asset, b in data["result"]["balances"].items():
             value, locked = D(b.get("value")), D(b.get("locked"))
             # UNVERIFIED: we read `value` as the total, so free = value - locked.
             out[asset] = Balance(asset, max(value - locked, ZERO), locked)
+        self._balances_cache = (time.monotonic(), out)
         return out
 
     async def get_fees(self) -> dict[str, tuple[Decimal, Decimal]]:
@@ -266,12 +271,14 @@ class WallexClient(ExchangeClient):
             "quantity": str(req.qty),
             "client_id": client_id,
         }
+        self._balances_cache = None
         data = await self._request("POST", "/v1/account/orders", body=body)
         return self._parse_order(data["result"], fallback_id=client_id, tag=req.client_tag)
 
     async def cancel_order(self, symbol: str, order_id: str) -> Order:
         # Cancelling reduces risk, so it works while the kill switch is engaged (but still needs live mode).
         require_live(self.settings, risk_reducing=True)
+        self._balances_cache = None
         data = await self._request("DELETE", f"/v1/account/orders/{order_id}")
         return self._parse_order(data["result"], fallback_id=order_id)
 

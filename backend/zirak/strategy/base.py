@@ -12,6 +12,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, ClassVar
 
+import numpy as np
 import pandas as pd
 
 from zirak.models import ZERO, Market, OrderBook, OrderType, Side
@@ -29,6 +30,47 @@ class Signal:
     limit_price: Decimal | None = None
 
 
+COLUMNS = ("ts", "open", "high", "low", "close", "volume")
+
+
+class Frame:
+    """A read-only, DataFrame-like view of closed candles: `frame["close"]` returns a pandas Series.
+
+    Series are built lazily and cached, which is much cheaper than constructing a full DataFrame on
+    every candle (backtests call this thousands of times). `ts` holds unix seconds; it's exposed as
+    UTC datetimes.
+    """
+
+    def __init__(self, arrays: dict[str, np.ndarray]) -> None:
+        self._arrays = arrays
+        self._series: dict[str, pd.Series] = {}
+
+    @classmethod
+    def from_dataframe(cls, df: pd.DataFrame) -> Frame:
+        arrays = {c: df[c].to_numpy() for c in COLUMNS if c in df and c != "ts"}
+        if "ts" in df:
+            arrays["ts"] = (pd.to_datetime(df["ts"], utc=True).astype("int64") // 10**9).to_numpy()
+        return cls(arrays)
+
+    def __len__(self) -> int:
+        return len(self._arrays["close"])
+
+    def __contains__(self, name: str) -> bool:
+        return name in self._arrays
+
+    def __getitem__(self, name: str) -> pd.Series:
+        if name not in self._series:
+            arr = self._arrays[name]
+            if name == "ts":
+                self._series[name] = pd.Series(pd.to_datetime(arr, unit="s", utc=True))
+            else:
+                self._series[name] = pd.Series(arr, dtype=float)
+        return self._series[name]
+
+    def last(self, name: str) -> float:
+        return float(self._arrays[name][-1])
+
+
 @dataclass
 class StrategyContext:
     """Everything a strategy may look at. `df` holds only *closed* candles (no look-ahead)."""
@@ -37,7 +79,7 @@ class StrategyContext:
     market: Market
     resolution: str
     now: datetime
-    df: pd.DataFrame
+    df: Frame
     position_qty: Decimal = ZERO
     avg_entry: Decimal | None = None
     entries: int = 0  # buys since the position was last flat
@@ -50,7 +92,7 @@ class StrategyContext:
 
     @property
     def close(self) -> float:
-        return float(self.df["close"].iloc[-1])
+        return self.df.last("close")
 
 
 class Strategy(ABC):

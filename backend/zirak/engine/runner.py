@@ -20,9 +20,10 @@ from zirak.config import Settings
 from zirak.engine.bot import Bot, SimClock
 from zirak.engine.risk import RiskConfig, RiskManager
 from zirak.exchange.base import ExchangeClient
+from zirak.exchange.guard import live_blockers
 from zirak.exchange.paper import PaperExchange
 from zirak.exchange.replay import ReplayExchange
-from zirak.exchange.wallex import WallexAPIError
+from zirak.exchange.wallex import WallexAPIError, WallexClient
 from zirak.fees import FeeModel
 from zirak.models import ZERO, Market, Order, resolution_delta, utcnow
 from zirak.strategy.base import Strategy
@@ -87,6 +88,7 @@ class BotRunner:
         initial_quote: Decimal | None = None,
         speed_s: float = 1.0,
         start_fraction: float = 0.55,
+        real: bool = False,
     ) -> None:
         if self.running:
             raise RunnerError("a bot is already running; stop it first")
@@ -98,6 +100,17 @@ class BotRunner:
         }
         fees = FeeModel(self.settings.fee_maker, self.settings.fee_taker)
         self.speed_s, self.error, self.started_at = speed_s, None, utcnow()
+        if real:
+            # REAL MONEY. Every live condition is re-checked here and again on every order.
+            blockers = live_blockers(self.settings)
+            if blockers:
+                raise RunnerError("live trading blocked: " + "; ".join(blockers))
+            if not isinstance(self.live, WallexClient):
+                raise RunnerError("real trading needs the Wallex client (DATA_SOURCE=wallex)")
+            await self._start_live(
+                strategy, risk, symbol, resolution, initial_quote, fees, quote_start_for, real=True
+            )
+            return
         if self.settings.data_source == "wallex":
             if self.live is None:
                 raise RunnerError("DATA_SOURCE=wallex but no live market-data client")
@@ -152,8 +165,10 @@ class BotRunner:
         initial_quote: Decimal | None,
         fees: FeeModel,
         quote_start_for: dict[str, Decimal],
+        real: bool = False,
     ) -> None:
-        """Paper trading on live Wallex data: signals on real closed candles, fills on the real book."""
+        """Live Wallex data: signals on real closed candles. Paper mode fills on the real book; `real`
+        sends guarded LIMIT orders to Wallex (only reachable when every live condition holds)."""
         assert self.live is not None
         markets = {m.symbol: m for m in await self.live.get_markets()}
         if symbol not in markets:
@@ -164,32 +179,44 @@ class BotRunner:
         history = await self.live.get_candles(symbol, resolution, utcnow() - step * (warm * 2), utcnow())
         if len(history) < strategy.warmup + 1:
             raise RunnerError(f"not enough live {resolution} history for {symbol}")
-        quote_start = initial_quote or quote_start_for.get(market.quote, ZERO)
-        self.paper = PaperExchange(
-            self.live,
-            {symbol: market},
-            fees,
-            self.settings.slippage_bps,
-            {market.quote: quote_start, market.base: ZERO},
-            self.settings.fill_participation,
-        )
-        self.paper.set_last_price(symbol, history[-1].close)
-        self.bot = Bot(
-            strategy,
-            self._risk(risk, market, fees),
-            self.paper,
-            market,
-            resolution,
-            settings=self.settings,
-            fill_on_candle=False,
-        )
+        rm = self._risk(risk, market, fees)
+        if real:
+            # The hard per-order cap from the environment also caps the strategy's own sizing.
+            cap = self.settings.max_order_for_quote(market.quote)
+            if cap is not None:
+                rm.cfg.max_order_quote = min(rm.cfg.max_order_quote or cap, cap)
+            self.paper = None
+            self.bot = Bot(
+                strategy,
+                rm,
+                self.live,
+                market,
+                resolution,
+                settings=self.settings,
+                fill_on_candle=False,
+                order_ttl_s=self.settings.live_order_ttl_s,
+            )
+        else:
+            quote_start = initial_quote or quote_start_for.get(market.quote, ZERO)
+            self.paper = PaperExchange(
+                self.live,
+                {symbol: market},
+                fees,
+                self.settings.slippage_bps,
+                {market.quote: quote_start, market.base: ZERO},
+                self.settings.fill_participation,
+            )
+            self.paper.set_last_price(symbol, history[-1].close)
+            self.bot = Bot(
+                strategy, rm, self.paper, market, resolution, settings=self.settings, fill_on_candle=False
+            )
         self.bot.candles = list(history)
-        self.mode = "paper-live"
+        self.mode = "live" if real else "paper-live"
         self.progress = (0, 0)
         self.task = asyncio.create_task(self._live_loop(symbol, resolution, history[-1].ts))
 
     async def _live_loop(self, symbol: str, resolution: str, last_ts: Any) -> None:
-        assert self.bot is not None and self.live is not None and self.paper is not None
+        assert self.bot is not None and self.live is not None
         step = resolution_delta(resolution)
         failures = 0
         try:
@@ -199,7 +226,8 @@ class BotRunner:
                     return
                 try:
                     book = await self.live.get_order_book(symbol)
-                    self.paper.on_book(book)  # fill pending paper orders against the real book
+                    if self.paper is not None:
+                        self.paper.on_book(book)  # fill pending paper orders against the real book
                     await self.bot.sync_orders()
                     if book.mid is not None:
                         self.bot.last_price = book.mid
@@ -259,7 +287,7 @@ class BotRunner:
             "error": self.error,
             "speed_s": self.speed_s,
             "progress": {"done": self.progress[0], "total": self.progress[1]},
-            "live_trading": False,
+            "live_trading": self.mode == "live" and self.running,
         }
         if self.bot is None:
             return {**base, "bot": None, "log": [], "equity_curve": []}

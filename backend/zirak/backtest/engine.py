@@ -43,7 +43,10 @@ def cost_buffer(fees: FeeModel, slippage_bps: Decimal) -> Decimal:
     return fees.taker + slippage_bps / BPS + MARKET_BUY_BUFFER + Decimal("0.001")
 
 
-async def run_backtest_async(candles: list[Candle], setup: BacktestSetup) -> dict[str, Any]:
+async def run_backtest_async(
+    candles: list[Candle], setup: BacktestSetup, warmup: list[Candle] | None = None
+) -> dict[str, Any]:
+    """`warmup` candles are given to the strategy as history before trading starts (never traded)."""
     if len(candles) < 2:
         raise ValueError("need at least 2 candles to backtest")
     m, res = setup.market, setup.resolution
@@ -60,6 +63,9 @@ async def run_backtest_async(candles: list[Candle], setup: BacktestSetup) -> dic
     )
     risk = RiskManager(setup.risk, m, cost_buffer(setup.fees, setup.slippage_bps))
     bot = Bot(setup.strategy, risk, paper, m, res, clock=clock)
+    if warmup:
+        bot.candles = list(warmup)
+        paper.set_last_price(m.symbol, warmup[-1].close)
     step = resolution_delta(res)
     for candle in candles:
         replay.set_cursor(candle.ts + step)
@@ -75,8 +81,10 @@ async def run_backtest_async(candles: list[Candle], setup: BacktestSetup) -> dic
     return build_report(bot, setup, candles, metrics.to_dict())
 
 
-def run_backtest(candles: list[Candle], setup: BacktestSetup) -> dict[str, Any]:
-    return asyncio.run(run_backtest_async(candles, setup))
+def run_backtest(
+    candles: list[Candle], setup: BacktestSetup, warmup: list[Candle] | None = None
+) -> dict[str, Any]:
+    return asyncio.run(run_backtest_async(candles, setup, warmup))
 
 
 def _downsample(n: int) -> list[int]:

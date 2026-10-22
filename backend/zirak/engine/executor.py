@@ -9,7 +9,7 @@ from zirak.engine.risk import RiskDecision
 from zirak.exchange.base import ExchangeClient
 from zirak.exchange.guard import LiveTradingDisabled, check_hard_limits, require_live
 from zirak.fees import apply_slippage
-from zirak.models import Market, Order, OrderRequest, OrderType
+from zirak.models import Market, Order, OrderRequest, OrderType, Side
 from zirak.strategy.base import Signal
 
 
@@ -33,6 +33,11 @@ class Executor:
             if self.settings is None:
                 raise LiveTradingDisabled("no settings given for a real exchange")
             require_live(self.settings)
+            if req.type is not OrderType.LIMIT:
+                # Price the protective limit off the live book: best ask for buys, best bid for sells.
+                book = await self.exchange.get_order_book(self.market.symbol)
+                touch = book.best_ask if req.side is Side.BUY else book.best_bid
+                ref_price = touch or ref_price
             req = self.protect(req, ref_price, self.settings.live_max_slippage_bps)
             check_hard_limits(self.settings, self.market, req, ref_price)
         return await self.exchange.place_order(req)

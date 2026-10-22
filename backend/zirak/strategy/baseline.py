@@ -232,3 +232,54 @@ class Dca(Strategy):
                 )
             ]
         return []
+
+
+class EmotionalTrader(Strategy):
+    """For comparison only: a typical emotional retail trader. Chases pumps (buys big after a sharp rise)
+    and panic-sells after a drop. Zirak's pitch is beating *this*, not just the market."""
+
+    key = "fomo"
+    title_fa = "معامله‌گر هیجانی (برای مقایسه)"
+    description_fa = (
+        "بعد از هر جهش با هیجان می‌خرد و بعد از هر ریزش وحشت‌زده می‌فروشد؛ رفتار رایج معامله‌گران تازه‌کار."
+    )
+
+    def __init__(
+        self, pump_pct: float = 3, panic_pct: float = 3, lookback: int = 24, size_pct: float = 90, **kw: Any
+    ) -> None:
+        super().__init__(pump_pct=pump_pct, panic_pct=panic_pct, lookback=lookback, size_pct=size_pct, **kw)
+        self.pump, self.panic, self.lookback, self.size_pct = (
+            float(pump_pct),
+            float(panic_pct),
+            int(lookback),
+            _d(size_pct),
+        )
+        self.warmup = self.lookback + 1
+
+    def on_candle(self, ctx: StrategyContext) -> list[Signal]:
+        closes = ctx.df["close"]
+        if len(closes) < self.warmup:
+            return []
+        change = (ctx.close / float(closes.iloc[-self.lookback]) - 1) * 100
+        ind = {"close": ctx.close, "change_pct": change}
+        if not ctx.in_position and change >= self.pump:
+            return [
+                Signal(
+                    Side.BUY,
+                    self.size_pct,
+                    "fomo_buy",
+                    f"قیمت {fa_pct(change)} بالا رفته؛ «نکنه جا بمونم!» و تقریباً همه‌چیز را می‌خرد.",
+                    ind,
+                )
+            ]
+        if ctx.in_position and change <= -self.panic:
+            return [
+                Signal(
+                    Side.SELL,
+                    HUNDRED,
+                    "panic_sell",
+                    f"قیمت {fa_pct(-change)} ریخته؛ با ترس همه را می‌فروشد.",
+                    ind,
+                )
+            ]
+        return []

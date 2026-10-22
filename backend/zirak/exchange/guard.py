@@ -25,10 +25,13 @@ class HardLimitExceeded(RuntimeError):
 def live_blockers(settings: Settings, *, risk_reducing: bool = False) -> list[str]:
     """Every reason live trading is not allowed right now (empty list = allowed).
 
-    `risk_reducing=True` is for cancels and read-only account calls: those must keep working while
-    the kill switch is engaged, otherwise the kill switch could not cancel open orders.
+    `risk_reducing=True` is for cancels and read-only account calls (balances, fees, order status).
+    They can't lose money, so they only need the API key: the kill switch must be able to cancel
+    orders at any time, and the pre-flight check reads balances before live trading is switched on.
     """
     blockers: list[str] = []
+    if risk_reducing:
+        return [] if settings.wallex_api_key else ["WALLEX_API_KEY is not set"]
     if not settings.live_trading:
         blockers.append("LIVE_TRADING is not true")
     if not settings.max_order_tmn or settings.max_order_tmn <= 0:

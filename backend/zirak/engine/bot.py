@@ -17,16 +17,15 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-import pandas as pd
+import numpy as np
 
 from zirak.config import Settings
 from zirak.engine.executor import Executor
 from zirak.engine.risk import PortfolioView, RiskDecision, RiskManager
 from zirak.exchange.base import ExchangeClient
 from zirak.exchange.paper import PaperExchange
-from zirak.indicators import candles_to_df
 from zirak.models import ZERO, Candle, Market, Order, Side, resolution_delta, utcnow
-from zirak.strategy.base import Signal, Strategy, StrategyContext
+from zirak.strategy.base import COLUMNS, Frame, Signal, Strategy, StrategyContext
 
 
 class SimClock:
@@ -123,7 +122,7 @@ class Bot:
         resolution: str,
         settings: Settings | None = None,
         clock: SimClock | None = None,
-        window: int = 300,
+        window: int = 150,
         fill_on_candle: bool = True,
         order_ttl_s: float | None = None,
     ) -> None:
@@ -146,6 +145,8 @@ class Bot:
         self.last_price: Decimal | None = None
         #: candle-mode paper fills (backtests/replays). Live paper trading fills on order-book snapshots.
         self.fill_on_candle = fill_on_candle
+        self._cols: tuple[list[float], ...] = ([], [], [], [], [], [])
+        self._cols_last: datetime | None = None
         #: cancel orders still open after this many seconds (live: marketable limits must not linger)
         self.order_ttl_s = order_ttl_s
 
@@ -189,8 +190,40 @@ class Bot:
             base_free=base.free if base else ZERO,
         )
 
+    def _frame(self) -> Frame:
+        """Closed candles (last `window`) from incrementally cached columns: one candle is appended per
+        step; a full rebuild happens only when the candle list is replaced or trimmed from outside."""
+        n = len(self.candles)
+        cached = len(self._cols[0])
+        last = self.candles[-1].ts if self.candles else None
+        prev = self.candles[-2].ts if n > 1 else None
+        if cached == n - 1 and self._cols_last == prev:
+            self._append_cols(self.candles[-1])
+        elif not (cached == n and self._cols_last == last):
+            self._cols = ([], [], [], [], [], [])
+            for c in self.candles:
+                self._append_cols(c)
+        self._cols_last = last
+        w = self.window
+        return Frame({name: np.asarray(col[-w:]) for name, col in zip(COLUMNS, self._cols, strict=True)})
+
+    def _append_cols(self, c: Candle) -> None:
+        for col, val in zip(
+            self._cols,
+            (
+                int(c.ts.timestamp()),
+                float(c.open),
+                float(c.high),
+                float(c.low),
+                float(c.close),
+                float(c.volume),
+            ),
+            strict=True,
+        ):
+            col.append(val)
+
     def _context(self, now: datetime, view: PortfolioView) -> StrategyContext:
-        df: pd.DataFrame = candles_to_df(self.candles[-self.window :])
+        df = self._frame()
         return StrategyContext(
             symbol=self.symbol,
             market=self.market,

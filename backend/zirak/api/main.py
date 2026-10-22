@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -15,7 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ValidationError
 
 from zirak import __version__
-from zirak.backtest.engine import BacktestSetup, run_backtest_async, save_report
+from zirak.backtest.engine import BacktestSetup, run_backtest, save_report
+from zirak.backtest.insights import Period, risk_shield, select_period, unprotected, zirak_score
 from zirak.config import Settings, load_settings
 from zirak.data.source import build_replay, load_series
 from zirak.engine.risk import RiskConfig
@@ -23,6 +25,7 @@ from zirak.engine.runner import BotRunner, RunnerError
 from zirak.exchange.guard import live_blockers
 from zirak.exchange.wallex import WallexAPIError, WallexClient
 from zirak.fees import FeeModel
+from zirak.i18n import fa_num, fa_pct
 from zirak.llm.brief import compute_facts, market_brief
 from zirak.llm.builder import build_strategy
 from zirak.llm.explain import explain_entry
@@ -30,8 +33,8 @@ from zirak.llm.provider import build_llm
 from zirak.markets import ASSET_NAMES_FA, market_name_fa
 from zirak.models import RESOLUTION_SECONDS, Candle, Market, OrderBook, resolution_delta, utcnow
 from zirak.strategy.base import Strategy
+from zirak.strategy.registry import DEFAULT_PARAMS, STRATEGIES, catalog
 from zirak.strategy.registry import build_strategy as make_strategy
-from zirak.strategy.registry import catalog
 from zirak.strategy.spec import RuleStrategy, StrategySpec
 
 
@@ -49,6 +52,15 @@ class RunIn(BaseModel):
     risk: dict[str, Any] = Field(default_factory=dict)
     initial_quote: Decimal | None = None
     speed_s: float = Field(1.0, ge=0.05, le=30)
+    period: str = "90d"  # 30d | 90d | 180d | 365d | all | crash
+
+
+# The user must type this exact sentence to start a real-money bot.
+LIVE_CONFIRM_PHRASE = "می‌دانم با پول واقعی معامله می‌کنم"
+
+
+class LiveStartIn(RunIn):
+    confirm: str = ""
 
 
 class ExplainIn(BaseModel):
@@ -232,16 +244,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(422, str(e)) from e
 
     # ---- backtests ---------------------------------------------------------------------------------
-    @app.post("/api/backtest")
-    async def backtest(body: RunIn) -> dict[str, Any]:
-        strat, risk, symbol, resolution = strategy_and_risk(body)
+    def market_series(symbol: str, resolution: str) -> tuple[Market, list[Candle]]:
         market = state.replay.markets.get(symbol)
         if market is None:
             raise HTTPException(404, f"unknown market {symbol}")
         try:
-            series = load_series(state.replay, symbol, resolution)
+            return market, load_series(state.replay, symbol, resolution)
         except LookupError as e:
             raise HTTPException(404, str(e)) from e
+
+    async def run_one(
+        strat: Strategy, risk: RiskConfig, market: Market, resolution: str, period: Period, body: RunIn
+    ) -> dict[str, Any]:
         initial = body.initial_quote or (
             settings.paper_start_tmn if market.quote == "TMN" else settings.paper_start_usdt
         )
@@ -256,9 +270,119 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             participation=settings.fill_participation,
             meta={"data": state.replay_label, "spec": body.spec},
         )
-        report = await run_backtest_async(series, setup)
+        # CPU-bound: run in a worker thread so the paper bot's loop keeps ticking.
+        report: dict[str, Any] = await asyncio.to_thread(run_backtest, period.candles, setup, period.warmup)
+        report["period"] = period.to_dict()
+        return report
+
+    @app.post("/api/backtest")
+    async def backtest(body: RunIn) -> dict[str, Any]:
+        strat, risk, symbol, resolution = strategy_and_risk(body)
+        market, series = market_series(symbol, resolution)
+        period = select_period(series, body.period, resolution)
+        report = await run_one(strat, risk, market, resolution, period, body)
+        naked_strat = strategy_and_risk(body)[0]  # fresh instance: strategies keep state
+        naked = await run_one(naked_strat, unprotected(risk), market, resolution, period, body)
+        report["score"] = zirak_score(report["metrics"])
+        report["shield"] = risk_shield(report, naked, market.quote)
         save_report(report, state.reports_dir)
         return report
+
+    @app.post("/api/duel")
+    async def duel(body: RunIn) -> dict[str, Any]:
+        """Your strategy vs the baselines vs an emotional trader vs buy-and-hold, same market and period."""
+        _, _, symbol, resolution = strategy_and_risk(body)
+        market, series = market_series(symbol, resolution)
+        period = select_period(series, body.period, resolution)
+        entrants: list[tuple[str, bool, RunIn]] = []
+        if body.strategy == "rules" or body.strategy not in DEFAULT_PARAMS:
+            entrants.append(("yours", True, body))
+        for key in [*DEFAULT_PARAMS, "fomo"]:
+            params = body.params if key == body.strategy else DEFAULT_PARAMS.get(key, {})
+            entrants.append(
+                (
+                    key,
+                    key == body.strategy,
+                    body.model_copy(
+                        update={
+                            "strategy": key,
+                            "params": params,
+                            "spec": None,
+                            "symbol": symbol,
+                            "resolution": resolution,
+                        }
+                    ),
+                )
+            )
+        rows: list[dict[str, Any]] = []
+        first: dict[str, Any] | None = None
+        for key, mine, run in entrants:
+            strat, risk, _, _ = strategy_and_risk(run)
+            rep = await run_one(strat, risk, market, resolution, period, run)
+            first = first or rep
+            m, sc = rep["metrics"], zirak_score(rep["metrics"])
+            title = "استراتژی شما" if key == "yours" else STRATEGIES[key].title_fa
+            rows.append(
+                {
+                    "key": key,
+                    "title_fa": title,
+                    "mine": mine,
+                    "return_pct": m["return_pct"],
+                    "max_drawdown_pct": m["max_drawdown_pct"],
+                    "trades": m["trades"],
+                    "win_rate_pct": m["win_rate_pct"],
+                    "score": sc["score"],
+                    "grade": sc["grade"],
+                    "emotional": key == "fomo",
+                }
+            )
+        assert first is not None
+        fm = first["metrics"]
+        bh_metrics = {
+            **fm,
+            "return_pct": fm["buy_hold_return_pct"],
+            "max_drawdown_pct": fm["buy_hold_max_drawdown_pct"],
+            "trades": 0,
+            "win_rate_pct": 0.0,
+        }
+        bh_score = zirak_score(bh_metrics)
+        rows.append(
+            {
+                "key": "buy_hold",
+                "title_fa": "خرید و نگهداری",
+                "mine": False,
+                "return_pct": fm["buy_hold_return_pct"],
+                "max_drawdown_pct": fm["buy_hold_max_drawdown_pct"],
+                "trades": 0,
+                "win_rate_pct": 0.0,
+                "score": bh_score["score"],
+                "grade": bh_score["grade"],
+                "emotional": False,
+            }
+        )
+        rows.sort(key=lambda r: r["score"], reverse=True)
+        for i, r in enumerate(rows, 1):
+            r["rank"] = i
+        mine_row = next((r for r in rows if r["mine"]), None)
+        fomo_row = next(r for r in rows if r["emotional"])
+        headline = (
+            f"استراتژی شما رتبهٔ {fa_num(mine_row['rank'], 0)} از {fa_num(len(rows), 0)} شد."
+            if mine_row
+            else "مقایسهٔ استراتژی‌ها"
+        )
+        if mine_row:
+            gap = mine_row["return_pct"] - fomo_row["return_pct"]
+            headline += (
+                f" نسبت به یک معامله‌گر هیجانی {fa_pct(abs(gap), 1)} {'بهتر' if gap >= 0 else 'بدتر'} عمل کرد."
+            )
+        return {
+            "symbol": symbol,
+            "resolution": resolution,
+            "quote": market.quote,
+            "period": period.to_dict(),
+            "rows": rows,
+            "headline_fa": headline,
+        }
 
     @app.get("/api/backtests/{report_id}")
     async def get_report(report_id: str) -> dict[str, Any]:
@@ -297,6 +421,100 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if state.runner.running:
             raise HTTPException(409, "bot is still running")
         state.runner.reset_kill()
+        return await state.runner.status()
+
+    # ---- live money: pre-flight checklist and guarded start ----------------------------------------
+    async def preflight() -> dict[str, Any]:
+        checks: list[dict[str, Any]] = []
+
+        def add(key: str, ok: bool, title: str, detail: str = "", required: bool = True) -> None:
+            checks.append(
+                {"key": key, "ok": ok, "title_fa": title, "detail_fa": detail, "required": required}
+            )
+
+        add("live_flag", settings.live_trading, "معاملهٔ واقعی در تنظیمات روشن است (LIVE_TRADING=true)")
+        add(
+            "order_caps",
+            bool(settings.max_order_tmn and settings.max_order_usdt),
+            "سقف هر سفارش تعیین شده است",
+            f"تومان: {fa_num(settings.max_order_tmn or 0, 0)} — تتر: {fa_num(settings.max_order_usdt or 0, 2)}",
+        )
+        add(
+            "daily_loss",
+            bool(settings.daily_loss_limit_pct),
+            "سقف زیان روزانه تعیین شده است",
+            f"{fa_pct(settings.daily_loss_limit_pct or 0, 1)} از سرمایهٔ ابتدای روز",
+        )
+        add("kill_switch", not state.runner.kill_engaged, "کلید توقف اضطراری آزاد و آماده است")
+        add("data_source", settings.data_source == "wallex", "دادهٔ زندهٔ والکس فعال است (DATA_SOURCE=wallex)")
+        add(
+            "api_key",
+            bool(settings.wallex_api_key),
+            "کلید API والکس تنظیم شده است",
+            "فقط با دسترسی معامله؛ هرگز دسترسی برداشت",
+        )
+        client = state.live or WallexClient(settings)
+        balances: dict[str, str] = {}
+        fees: dict[str, Any] = {}
+        try:
+            try:
+                await client.get_markets()
+                add("reachable", True, "اتصال به والکس برقرار است")
+            except (httpx.HTTPError, WallexAPIError) as e:
+                add("reachable", False, "اتصال به والکس برقرار است", type(e).__name__)
+            if settings.wallex_api_key:
+                try:
+                    bal = await client.get_balances()
+                    balances = {a: str(b.total) for a, b in bal.items() if a in ("TMN", "USDT", "BTC", "ETH")}
+                    add(
+                        "key_valid",
+                        True,
+                        "کلید API معتبر است و موجودی خوانده شد",
+                        f"تومان: {fa_num(bal['TMN'].total, 0) if 'TMN' in bal else '۰'}",
+                    )
+                except (httpx.HTTPError, WallexAPIError) as e:
+                    add("key_valid", False, "کلید API معتبر است و موجودی خوانده شد", str(e)[:120])
+                try:
+                    raw = await client.get_fees()
+                    fees = {
+                        k: {"maker": str(v[0]), "taker": str(v[1])}
+                        for k, v in raw.items()
+                        if k in settings.markets
+                    }
+                    add("fees", True, "کارمزد حساب شما از والکس خوانده شد", "", required=False)
+                except (httpx.HTTPError, WallexAPIError) as e:
+                    add("fees", False, "کارمزد حساب شما از والکس خوانده شد", str(e)[:120], required=False)
+        finally:
+            if client is not state.live:
+                await client.close()
+        ready = all(c["ok"] for c in checks if c["required"])
+        return {
+            "ready": ready,
+            "checks": checks,
+            "balances": balances,
+            "fees": fees,
+            "confirm_phrase": LIVE_CONFIRM_PHRASE,
+            "max_slippage_bps": str(settings.live_max_slippage_bps),
+            "order_ttl_s": settings.live_order_ttl_s,
+        }
+
+    @app.get("/api/live/preflight")
+    async def live_preflight() -> dict[str, Any]:
+        return await preflight()
+
+    @app.post("/api/live/start")
+    async def live_start(body: LiveStartIn) -> dict[str, Any]:
+        if body.confirm.strip() != LIVE_CONFIRM_PHRASE:
+            raise HTTPException(400, "برای شروع معاملهٔ واقعی، جملهٔ تأیید را دقیقاً تایپ کنید.")
+        pf = await preflight()
+        if not pf["ready"]:
+            failed = [c["title_fa"] for c in pf["checks"] if c["required"] and not c["ok"]]
+            raise HTTPException(409, "پیش‌پرواز کامل نیست: " + "، ".join(failed))
+        strat, risk, symbol, resolution = strategy_and_risk(body)
+        try:
+            await state.runner.start(strat, risk, symbol, resolution, real=True)
+        except (RunnerError, KeyError) as e:
+            raise HTTPException(409, str(e)) from e
         return await state.runner.status()
 
     @app.get("/api/bot/log/{entry_id}/explain")

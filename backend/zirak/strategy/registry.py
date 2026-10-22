@@ -5,11 +5,11 @@ from __future__ import annotations
 from typing import Any
 
 from zirak.strategy.base import Strategy
-from zirak.strategy.baseline import Dca, EmaCross, Grid, RsiReversion
+from zirak.strategy.baseline import Dca, EmaCross, EmotionalTrader, Grid, RsiReversion
 from zirak.strategy.spec import RuleStrategy
 
 STRATEGIES: dict[str, type[Strategy]] = {
-    cls.key: cls for cls in (EmaCross, RsiReversion, Grid, Dca, RuleStrategy)
+    cls.key: cls for cls in (EmaCross, RsiReversion, Grid, Dca, RuleStrategy, EmotionalTrader)
 }
 
 # Default parameters shown in the UI for the baseline strategies.
