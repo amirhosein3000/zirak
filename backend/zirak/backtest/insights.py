@@ -88,6 +88,13 @@ def _clamp(x: float, lo: float = 0.0, hi: float = 1.0) -> float:
 GRADES = [(80, "A", "عالی"), (65, "B", "خوب"), (50, "C", "متوسط"), (35, "D", "ضعیف"), (0, "E", "پرخطر")]
 
 
+def _outcome(pct: float) -> str:
+    """ "۱٫۲٪ سود" / "۰٫۴٪ زیان": no minus signs inside Persian sentences."""
+    if abs(pct) < 0.05:
+        return "بدون تغییر"
+    return f"{fa_pct(abs(pct), 1)} {'سود' if pct > 0 else 'زیان'}"
+
+
 def zirak_score(m: dict[str, Any]) -> dict[str, Any]:
     """0-100: profit (20), capital protection (30), edge over buy-and-hold (35), consistency (15).
     Edge weighs most, so a strategy that loses little in a crash still scores fairly."""
@@ -101,7 +108,7 @@ def zirak_score(m: dict[str, Any]) -> dict[str, Any]:
     score = round(profit + protection + edge + consistency)
     grade, grade_fa = next((g, fa) for floor, g, fa in GRADES if score >= floor)
     parts = []
-    parts.append(f"بازده {fa_pct(ret, 1)} در برابر {fa_pct(bh, 1)} برای خرید و نگهداری")
+    parts.append(f"نتیجه {_outcome(ret)} در برابر {_outcome(bh)} برای خرید و نگهداری")
     parts.append(f"بیشترین افت سرمایه {fa_pct(abs(dd), 1)} (نگهداری: {fa_pct(abs(bh_dd), 1)})")
     if trades:
         parts.append(f"{fa_num(trades, 0)} معامله با {fa_pct(win, 0)} برد")

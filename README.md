@@ -15,6 +15,7 @@
 
 | Read this | For |
 |---|---|
+| [DEPLOY.md](DEPLOY.md) | **راهنمای قدم‌به‌قدم اجرا و دیپلوی برای تیم** (فارسی) |
 | [docs/ALGORITHM.md](docs/ALGORITHM.md) | **The technical document for the judges**: architecture, AI use, Wallex tools, buy/sell rules, risk, re-running |
 | [docs/challenge/README.md](docs/challenge/README.md) | The spec, the scoring map and the plan ([official text](docs/challenge/spec.md)) |
 | [docs/challenge/RUNBOOK.md](docs/challenge/RUNBOOK.md) | The 3 event days, step by step (backfill, train, shadow, probe, live, kill, deliverables) |
