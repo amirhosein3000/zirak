@@ -143,6 +143,52 @@ def cmd_paper(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_compete(args: argparse.Namespace) -> int:
+    """Competition mode (zirak/modules/competition.py): several paper strategies + team limits."""
+    from zirak.data.source import build_replay
+    from zirak.exchange.wallex import WallexClient
+    from zirak.modules.competition import DEFAULT_CONFIG, Competition, CompetitionIn
+
+    s = load_settings()
+    cfg = CompetitionIn.model_validate(_json_arg(args.config) if args.config else DEFAULT_CONFIG)
+    if args.speed is not None:
+        cfg = cfg.model_copy(update={"speed_s": args.speed})
+    replay, label = build_replay(s)
+    live = WallexClient(s) if s.data_source == "wallex" else None
+    comp = Competition(s, cfg, replay, live)
+
+    async def run() -> None:
+        await comp.start()
+        print(
+            f"competition '{cfg.name}' started: {len(cfg.entries)} entries on "
+            f"{'LIVE Wallex' if live else label} data, paper money. Files: {comp.out_dir}"
+        )
+        print("Stop: Ctrl+C (orderly) or `zirak kill` (kill switch).")
+        t0 = asyncio.get_running_loop().time()
+        try:
+            while comp.running:
+                await asyncio.sleep(max(cfg.write_every_s, 1.0))
+                perf = await comp.performance()
+                print(
+                    f"equity {perf['total_equity_tmn']} TMN  pnl {perf['pnl_pct']}%  "
+                    f"dd {perf['drawdown_from_peak_pct']}%"
+                )
+                if args.duration and asyncio.get_running_loop().time() - t0 > args.duration:
+                    break
+        finally:
+            await comp.stop()
+            perf = await comp.performance()
+            print("final:", {k: perf[k] for k in ("total_equity_tmn", "pnl_pct", "stopped_reason")})
+            if live is not None:
+                await live.close()
+
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        print("interrupted")
+    return 0
+
+
 def cmd_kill(args: argparse.Namespace) -> int:
     import httpx
 
@@ -324,6 +370,12 @@ def main(argv: list[str] | None = None) -> int:
         else:
             sp.add_argument("--speed", type=float, default=0.2, help="seconds per candle")
         sp.set_defaults(fn=fn)
+
+    sp = sub.add_parser("compete", help="competition mode: several paper strategies with team limits")
+    sp.add_argument("--config", help="CompetitionIn JSON string or file (default: conservative preset)")
+    sp.add_argument("--speed", type=float, help="replay: seconds per candle")
+    sp.add_argument("--duration", type=float, help="stop after N seconds")
+    sp.set_defaults(fn=cmd_compete)
 
     sp = sub.add_parser("kill", help="KILL SWITCH: stop all bots and cancel open orders")
     sp.add_argument("--api", default="http://127.0.0.1:8000")

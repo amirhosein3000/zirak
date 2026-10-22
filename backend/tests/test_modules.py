@@ -5,6 +5,7 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal as D
 from pathlib import Path
+from typing import Any
 
 import httpx
 import numpy as np
@@ -293,3 +294,110 @@ def test_coach_api_on_the_emotional_trader(tmp_path: Path) -> None:
         assert r["trades"] > 0 and r["findings"] and 0 <= r["score"] <= 100
         assert c.post("/api/m/coach", json={"source": "bot"}).status_code == 404
         assert c.post("/api/m/coach", json={"source": "backtest", "report_id": "../x"}).status_code == 404
+
+
+# ---- competition --------------------------------------------------------------------------------
+def test_competition_runs_writes_files_and_team_stop_kills(tmp_path: Path) -> None:
+    from zirak.data.source import build_replay
+    from zirak.modules.competition import Competition, CompetitionIn
+
+    s = settings(tmp_path)
+    replay, _ = build_replay(s)
+    cfg = CompetitionIn.model_validate(
+        {
+            "name": "t1",
+            "entries": [
+                {
+                    "name": "a",
+                    "strategy": "dca",
+                    "params": {"every": 1, "size_pct": 20},
+                    "symbol": "BTCTMN",
+                    "capital_pct": 40,
+                },
+                {"name": "b", "strategy": "rsi_reversion", "symbol": "ETHUSDT", "capital_pct": 50},
+            ],
+            "speed_s": 0.0,
+            "write_every_s": 0.05,
+            "max_drawdown_pct": 50,
+            "daily_loss_pct": 50,
+        }
+    )
+    comp = Competition(s, cfg, replay)
+
+    async def scenario() -> dict[str, Any]:
+        await comp.start()
+        for _ in range(200):
+            await asyncio.sleep(0.05)
+            if not comp.running:
+                break
+        await comp.stop()
+        return await comp.performance()
+
+    perf = asyncio.run(scenario())
+    out = tmp_path / "competition" / "t1"
+    saved = __import__("json").loads((out / "performance.json").read_text(encoding="utf-8"))
+    assert {e["name"] for e in saved["entries"]} == {"a", "b"}
+    assert D(saved["start_equity_tmn"]) > 0 and saved["usdt_tmn"]
+    a = next(e for e in perf["entries"] if e["name"] == "a")
+    assert D(a["start_equity"]) == s.paper_start_tmn * D("0.4")  # its sleeve, not the whole account
+    assert (out / "trades.jsonl").read_text(encoding="utf-8").strip()
+    assert (out / "equity.csv").read_text(encoding="utf-8").startswith("ts,total_equity_tmn")
+
+
+def test_competition_team_drawdown_engages_kill_switch(tmp_path: Path) -> None:
+    from zirak.data.source import build_replay
+    from zirak.modules.competition import Competition, CompetitionIn
+
+    s = settings(tmp_path)
+    replay, _ = build_replay(s)
+    cfg = CompetitionIn.model_validate(
+        {
+            "name": "t2",
+            "entries": [
+                {
+                    "name": "a",
+                    "strategy": "dca",
+                    "params": {"every": 1, "size_pct": 50},
+                    "symbol": "BTCTMN",
+                    "capital_pct": 100,
+                }
+            ],
+            "speed_s": 0.005,
+            "write_every_s": 0.05,
+            "max_drawdown_pct": 0.01,
+            "daily_loss_pct": 50,
+            "risk": {"stop_loss_pct": None, "daily_loss_limit_pct": None},
+        }
+    )
+    comp = Competition(s, cfg, replay)
+
+    async def scenario() -> None:
+        await comp.start()
+        for _ in range(200):
+            await asyncio.sleep(0.05)
+            if not comp.running:
+                break
+        await comp.stop()
+
+    asyncio.run(scenario())
+    assert comp.stopped_reason and "drawdown" in comp.stopped_reason
+    assert s.kill_file.exists()
+    assert all(r.bot is not None and r.bot.risk.killed for r in comp.runners.values())
+
+
+def test_competition_api_and_capital_check(tmp_path: Path) -> None:
+    with TestClient(create_app(settings(tmp_path))) as c:
+        cfg = c.get("/api/m/competition/default-config").json()
+        bad = {
+            **cfg,
+            "entries": [
+                {**cfg["entries"][0], "capital_pct": 80},
+                {**cfg["entries"][1], "capital_pct": 0.5},
+                {**cfg["entries"][2], "capital_pct": 30},
+            ],
+        }
+        assert c.post("/api/m/competition/start", json=bad).status_code == 422  # 110 % of TMN
+        r = c.post("/api/m/competition/start", json={**cfg, "speed_s": 0.05}).json()
+        assert len(r["entries"]) == 3
+        k = c.post("/api/m/competition/kill").json()
+        assert k["kill_engaged"] and not k["running"]

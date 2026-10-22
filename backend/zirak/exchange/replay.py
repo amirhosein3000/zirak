@@ -8,6 +8,7 @@ returned, which keeps backtests and replays free of look-ahead. It has no order 
 from __future__ import annotations
 
 import bisect
+import copy
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -58,6 +59,12 @@ class ReplayExchange(ExchangeClient):
         candles = {(s, r): store.load_candles(s, r) for s in symbols for r in resolutions}
         books = {s: store.load_books(s) for s in symbols}
         return cls({k: v for k, v in candles.items() if v}, {k: v for k, v in books.items() if v})
+
+    def fork(self) -> ReplayExchange:
+        """Same recorded data, independent time cursor (for several bots replaying side by side)."""
+        twin = copy.copy(self)
+        twin.cursor = None
+        return twin
 
     # ---- replay control ----------------------------------------------------------------------
     def series(self, symbol: str, resolution: str) -> list[Candle]:
