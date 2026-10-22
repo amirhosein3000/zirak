@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { ScoreRing } from "@/components/Gauges";
+import { CrashDrill } from "@/components/CrashDrill";
 import { DuelBoard } from "@/components/DuelBoard";
 import { LineChart, type Marker } from "@/components/LineChart";
 import { TradeLog } from "@/components/TradeLog";
@@ -232,6 +233,8 @@ function BacktestView() {
       </Card>
 
       <DuelBoard run={{ ...run, period: report.period.key }} />
+
+      <CrashDrill run={run} />
 
       <ErrorBox message={error} />
       <Button className="w-full" onClick={startPaper} loading={busy === "paper"}>

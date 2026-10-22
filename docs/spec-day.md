@@ -79,6 +79,8 @@ answers, replay dataset with a clear story), real LLM key configured plus a back
 4. (15 s) Backtest: return vs buy-and-hold, drawdown chart, fees included; tap «چرا؟» on a trade.
 5. (15 s) Start paper mode → live dashboard → a decision appears with its explanation.
 6. (5 s) Kill switch: one tap, every order canceled, bot stopped.
+   (Alt. 15 s if time allows, before the kill switch: «مانور سقوط» → «سقوط ناگهانی»: price −27 % on screen,
+   Zirak's line stays flat, the ticker narrates the stop-loss and the blocked buys.)
 7. (10 s) Why it matters for Wallex: safer users, more engagement and volume, explainable AI.
 
 ## 5. Parallel tasks template

@@ -45,7 +45,8 @@ backend/zirak/
   strategy/        base.py (Strategy, Signal, StrategyContext), baseline.py (4 strategies),
                    spec.py (StrategySpec DSL + RuleStrategy), registry.py
   engine/          risk.py (RiskManager), executor.py, bot.py (one strategy on one market), runner.py (paper bot + kill switch)
-  backtest/        engine.py (replays through the same Bot), metrics.py
+  backtest/        engine.py (replays through the same Bot), metrics.py, insights.py (score, shield,
+                   time machine), drill.py (crash drill), walkforward.py (research)
   llm/             provider.py (OpenAI-compatible + mock), brief.py, builder.py, explain.py
   modules/         optional features behind the MODULES flag (see "Modules" below)
   api/main.py      FastAPI app

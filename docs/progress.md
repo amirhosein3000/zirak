@@ -50,7 +50,15 @@ _Last updated: 2026-10-22 (prompts 1–4: hardening, modules, research, dry run)
       presets in `strategy/presets.py`; competition default = dip-buy preset, 50 % reserve
 - [x] **Prompt 4 — dry run**: `docs/fake-specs/` (spec A product, spec B 48 h contest, dry-run plan);
       cheap prep done (order state-change log, spec log files, refuse real start with stray open orders)
-- [x] Quality gates green: ruff, mypy --strict, **126 pytest tests** (network-free), eslint, tsc, next build
+- [x] **New hero: «مانور سقوط» crash drill** (backtest page): the latest real candles + a synthetic,
+      deterministic stress scenario (flash crash, slow bleed, pump-and-dump, overnight gap) played candle by
+      candle: your strategy with Zirak vs the same strategy unprotected vs the emotional trader vs holding,
+      live scoreboard, Persian narration ticker (stops, blocked buys, gap slippage told honestly), verdict.
+      `POST /api/drill`, `backtest/drill.py`, `components/CrashDrill.tsx`. On the bundled BTCTMN sample with
+      the example sentence: flash crash −27 % → Zirak −0.4 %, unprotected −1.6 %, emotional −1.8 %, hold −20.8 %.
+      Honest caveat it also shows: in the slow bleed, repeated stops left the protected run slightly worse
+      (−4.5 % vs −4.2 %)
+- [x] Quality gates green: ruff, mypy --strict, **131 pytest tests** (network-free), eslint, tsc, next build
 
 ## Demo story (real Wallex data)
 Time machine on BTCTMN finds the real ~36 % crash (Ordibehesht–Tir 1405). The example sentence
