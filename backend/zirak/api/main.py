@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ValidationError
 
 from zirak import __version__
+from zirak.agent.api import router as agent_router
 from zirak.backtest.drill import PREFIX_CANDLES, SCENARIOS, assemble, build_path
 from zirak.backtest.engine import BacktestSetup, run_backtest, save_report
 from zirak.backtest.insights import (
@@ -159,6 +160,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.zirak = state
     mounted = mount_modules(app, settings)
+    app.include_router(agent_router)
 
     @app.get("/api/modules")
     async def modules() -> dict[str, Any]:

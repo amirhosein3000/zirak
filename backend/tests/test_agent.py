@@ -538,3 +538,36 @@ def test_unfilled_exit_is_repriced_after_its_ttl(tmp_path: Path) -> None:
     asyncio.run(agent.on_tick(clock.now))
     assert pos.exit_order_id not in (None, first), "a stale exit must be canceled and sent again"
     assert not asyncio.run(paper.get_order("BTCTMN", first)).status.is_open
+
+
+def test_stale_data_pauses_entries(tmp_path: Path) -> None:
+    agent, _, _ = make_agent(tmp_path)
+    agent.data_stale = True
+    assert agent.check_guard(T0, D("5000000")) == "pause:stale market data"
+
+
+def test_agent_api_lists_runs_and_explains_decisions(tmp_path: Path) -> None:
+    from fastapi.testclient import TestClient
+
+    from zirak.api.main import create_app
+
+    settings = Settings(
+        data_dir=tmp_path,
+        db_path=tmp_path / "x.sqlite",
+        kill_file=tmp_path / "KILL",
+        replay_dir=SAMPLE_DATA_DIR,
+    )
+    series = sample_series()
+    cfg = AgentConfig.model_validate({"model": {"retrain_hours": 240}})
+    asyncio.run(
+        run_backtest(cfg, series, {s: DEFAULT_MARKETS[s] for s in series}, settings, tmp_path / "runs" / "bt")
+    )
+    with TestClient(create_app(settings)) as c:
+        runs = c.get("/api/agent/runs").json()
+        assert runs[0]["run"] == "bt" and runs[0]["mode"] == "backtest"
+        s = c.get("/api/agent/runs/bt").json()
+        assert s["report"]["ai"]["candidates"] > 0 and s["equity"] and s["decisions"]
+        assert all("features" not in d for d in s["decisions"])
+        cand = next(d for d in s["decisions"] if d["kind"] == "candidate")
+        assert c.get(f"/api/agent/runs/bt/decisions/{cand['id']}").json()["decision"]["id"] == cand["id"]
+        assert c.get("/api/agent/runs/../etc").status_code == 404

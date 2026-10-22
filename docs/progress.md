@@ -1,8 +1,50 @@
 # Progress
 
-_Last updated: 2026-10-22 (prompts 1–4: hardening, modules, research, dry run)_
+_Last updated: 2026-10-22 (the official Wallex challenge spec arrived; the challenge agent is built)_
 
-## Done
+## The challenge (spec: docs/challenge/spec.md)
+Performance + technical track: an automated, AI-driven trader on a real Wallex **credit (prop) account**
+with 5,000,000 TMN for 3 days; scored 150 trading (return rank 90 — a loss scores 0 — drawdown 30,
+activity 15, stability 15) + 150 technical (strategy logic 40, real AI in decisions 35, risk 30,
+re-runnable 25, backtest + shadow 20). Profit must be **realised in Toman** (no coins at the end).
+Deliverables: 5-min demo video, GitHub + one md document, decision logs.
+
+### Built for it (2026-10-22)
+- [x] `docs/challenge/` — verbatim spec, scoring map and plan, RUNBOOK (event days), demo-video script;
+      `docs/ALGORITHM.md` — the judges' technical document
+- [x] Credit account support (read-only): balances-detail, active plan's warning/liquidation limits and
+      official profit, the plan's unavailable markets; transfer / close / wallet-link endpoints banned by test
+- [x] **`zirak/agent/`**: causal features incl. the Toman cross-rate gap; 4 explainable setups (3 enabled);
+      triple-barrier labels after fees; **ML meta-labeler** (GBM/logistic, seeded, out-of-time validated,
+      EV gate + fractional Kelly, prior fallback); **LLM posture agent** with 4 read-only tools (rules
+      fallback); multi-market one-account engine with account guard (daily loss, peak drawdown, liquidation
+      cushion, stale data, challenge clock + flatten), hard sizing caps, maker-first entries, resting
+      take-profit, live stop checks, time stops, exit TTL re-pricing, chunked exits
+- [x] Backtest (walk-forward) / shadow / live share one engine; state + restart reconciliation (unknown
+      orders cancelled, coins adopted); journal per run (decision log, postures, orders with latency,
+      trades, equity, manifest with commit, model snapshots); report in the judges' metrics
+- [x] `zirak agent verify`: every AI verdict recomputed from the logs (100 % on the sample); `export`
+      (decisions.csv), `probe` (day-0 real-account check), `flatten`; `zirak mcp` read-only MCP server
+- [x] Docker: `agent-shadow` / `agent-live` services (restart on crash and resume, stay down after a kill),
+      image built and smoke-tested here (backtest + verify inside the container, commit recorded)
+- [x] `/agent` page: results, equity, AI decisions, postures, positions, decision feed
+
+### Honest numbers so far
+Bundled real sample (1h, 60 days, placeholder fees 0.25/0.20 %), last 30 days walk-forward: +0.18 %
+mark-to-market, −0.58 % realised, max drawdown 1.4 %, 12 trades. Gross of fees mean reversion and
+breakouts have an edge on this data (+0.51 % / +0.40 % per trade), trend pullback and single-leg
+basis trades don't. **Real fees decide the sign**; the agent reads them from the account.
+
+### Next (needs the user / Wallex access)
+1. From Iran: `zirak backfill --days-1m 45 --days-1h 180`, `zirak agent train`, `zirak agent backtest --days 14`
+   on the challenge config (15m); update ALGORITHM.md §9 with the numbers.
+2. API key of the credit account (trade-only), challenge start/end (UTC) in `config/challenge.json`,
+   an LLM key (OpenAI-compatible) for the posture agent.
+3. `zirak agent probe --yes` with the user watching; record the confirmed order fields.
+4. Shadow run for hours; **user confirms the risk limits** (docs/challenge/README.md); then live.
+5. After the end: report, verify, export, commit the run directories, record the video, tag `challenge-final`.
+
+## Done (before the spec)
 - [x] Name: **Zirak (زیرک)**. Private repo github.com/amirhosein3000/zirak (renamed from Tarazoo on 2026-10-21).
 - [x] CLAUDE.md, `.env.example` (every variable documented)
 - [x] Core: Decimal models, fee/slippage maths, market precision/minimum checks
@@ -58,7 +100,7 @@ _Last updated: 2026-10-22 (prompts 1–4: hardening, modules, research, dry run)
       the example sentence: flash crash −27 % → Zirak −0.4 %, unprotected −1.6 %, emotional −1.8 %, hold −20.8 %.
       Honest caveat it also shows: in the slow bleed, repeated stops left the protected run slightly worse
       (−4.5 % vs −4.2 %)
-- [x] Quality gates green: ruff, mypy --strict, **131 pytest tests** (network-free), eslint, tsc, next build
+- [x] Quality gates green (at the hero-feature milestone): ruff, mypy --strict, 131 pytest tests (network-free), eslint, tsc, next build
 
 ## Demo story (real Wallex data)
 Time machine on BTCTMN finds the real ~36 % crash (Ordibehesht–Tir 1405). The example sentence

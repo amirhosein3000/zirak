@@ -157,6 +157,8 @@ class Agent:
         self.errors = 0
         self.stopped = False
         self.equity_now = ZERO
+        #: set by the live runner when market data stops updating: no new entries (exits continue)
+        self.data_stale = False
         self._sell_seen: dict[str, tuple[Decimal, Decimal, Decimal]] = {}
         #: backtests pass whole-series feature frames (identical, much faster); live builds a rolling window
         self.precomputed: dict[str, pd.DataFrame] | None = None
@@ -195,6 +197,8 @@ class Agent:
             "posture": self.posture.to_dict() if self.posture else None,
             "model_id": self.model.card.model_id,
             "errors": self.errors,
+            "equity_tmn": format(self.equity_now, "f"),
+            "package": self.package,
         }
 
     def restore(self, state: dict[str, Any]) -> None:
@@ -267,6 +271,8 @@ class Agent:
                 return "flatten:challenge end"
             if left_min <= clk.no_entry_before_end_h * 60:
                 return "pause:challenge end near"
+        if self.data_stale:
+            return "pause:stale market data"
         if clk.start is not None and now < clk.start:
             return "pause:challenge not started"
         if dd >= Decimal(str(r.dd_pause_pct)):
@@ -385,9 +391,12 @@ class Agent:
                     if oid == pos.tp_order_id:
                         pos.tp_order_id = None
                     else:
-                        pos.exit_order_id = None
+                        pos.exit_order_id, pos.exit_placed_at = None, None
                     if pos.qty - pos.sold < self.markets[sym].min_qty:
                         self._close(pos, kind, now)
+                        break
+                    if oid != pos.tp_order_id and pos.exit_reason:
+                        await self.exit_position(pos, pos.exit_reason, now)  # rest of a capped / partial exit
                         break
         self._save()
 
@@ -464,7 +473,8 @@ class Agent:
             "pnl_tmn": pnl,
             "pnl_pct": pnl_pct,
             "bars": pos.bars,
-            "reason_fa": f"{EXIT_FA.get(kind, kind)}؛ نتیجه {fa_pct(pnl_pct, 2)} ({fa_num(pnl, 0)} تومان).",
+            "reason_fa": f"{EXIT_FA.get(kind, kind)}؛ نتیجه {fa_pct(abs(pnl_pct), 2)} {'سود' if pnl >= 0 else 'زیان'} "
+            f"({fa_num(abs(pnl), 0)} تومان).",
         }
         self.journal.decision(rec)
         self.journal.trade(

@@ -237,6 +237,10 @@ async def run_live(
                 for sym in {*agent.positions, *agent.pending}:
                     exchange.on_book(await data.get_order_book(sym))
             await agent.on_tick(now)
+            # no new closed bar for a whole extra bar + STALE_DATA_S -> stale: entries pause, exits continue
+            agent.data_stale = last_bar is not None and (now - (last_bar + step)).total_seconds() > (
+                step.total_seconds() + settings.stale_data_s
+            )
             if last_bar is None or now >= last_bar + step * 2:
                 fresh = {s: await data.get_candles(s, cfg.resolution, now - step * 6, now) for s in markets}
                 newest = None
