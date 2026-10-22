@@ -40,8 +40,12 @@
    ```
 4. یک **توکن API** از حساب کاربری لیارا و **شناسهٔ تیم** (Team ID) را بردارید.
 
-**یک بار در گیت‌هاب:** Settings ← Secrets and variables ← Actions ← New repository secret:
-`LIARA_API_TOKEN` = توکن لیارا، `LIARA_TEAM_ID` = شناسهٔ تیم.
+**یک بار در گیت‌هاب:** Settings ← Secrets and variables ← Actions:
+- **Secrets:** `LIARA_API_TOKEN` (توکن لیارا)، `LIARA_TEAM_ID` (شناسهٔ تیم)، `WALLEX_API_KEY` (کلید حساب چالش)،
+  و اختیاری `LLM_API_KEY`، `WALLEX_SUB_ACCOUNT_CLIENT_ID`.
+- **Variables (اختیاری):** `LLM_BASE_URL`، `LLM_MODEL`، `WALLEX_PROP_PACKAGE_ID`، `ZIRAK_AGENT` (پیش‌فرض shadow)،
+  `LIVE_TRADING` (پیش‌فرض false)، `MAX_ORDER_TMN`، `DAILY_LOSS_LIMIT_PCT`.
+- هر دیپلوی این‌ها را خودکار در متغیرهای اپ `zirak-api` لیارا می‌نویسد؛ پس مرحلهٔ ۳ بالا (وارد کردن دستی متغیرها) لازم نیست.
 
 **هر بار دیپلوی:** Actions ← **Deploy to Liara** ← Run workflow (`both`). اول همهٔ تست‌ها اجرا می‌شوند، بعد دو اپ در
 لیارا (ساخت در ایران) دیپلوی می‌شوند و commit دیپلوی‌شده در هر اجرای ربات ثبت می‌شود.
