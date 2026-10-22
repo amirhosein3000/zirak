@@ -66,13 +66,16 @@ Everything trades through `ExchangeClient` (`exchange/base.py`):
   private method calls `guard.require_live()` first (cancels/reads use `risk_reducing=True` so the kill
   switch can still cancel). It only places LIMIT orders; the Executor turns live "market" signals into
   marketable LIMIT orders capped at `LIVE_MAX_SLIPPAGE_BPS`, and the Bot cancels them after
-  `LIVE_ORDER_TTL_S`. Order fills are tracked by polling `GET /v1/account/orders/{clientOrderId}` (the
+  `LIVE_ORDER_TTL_S`. Orders are shrunk to fit `MAX_ORDER_*` at the protective price, and
+  `place_order` throttles itself to the documented 20 orders / 10 s. Order fills are tracked by polling `GET /v1/account/orders/{clientOrderId}` (the
   private WebSocket needs a browser cookie). No withdraw/transfer method, ever (a test scans the code).
 - Candles: Wallex only serves 1m / 1h / 1d reliably (`udf/history` resolutions `1`, `60`, `1D`, paged
   backwards); 5m / 15m / 4h are aggregated locally (`data/aggregate.py`).
 - `PaperExchange(data=<any client>)` — simulated fills. Candle mode: orders placed after candle t
-  fill on candle t+1 (market at open ± slippage; limits only when price trades *through*); volume
-  participation cap gives partial fills. Book mode: market orders walk the book.
+  fill on candle t+1 (market at open ± slippage; a limit that is marketable on arrival fills as taker
+  at the open, capped by its limit; a resting limit fills as maker at its own price only when price
+  trades *through* it); all orders on a candle share one volume-participation cap (partial fills).
+  Book mode: market orders walk the book; first-pass crossing limits are takers at the level price.
 - `ReplayExchange` — recorded/sample data behind a time cursor that only exposes *closed* candles.
 - `Executor` re-checks `require_live` + `check_hard_limits` for any real client (belt and braces).
 
@@ -89,7 +92,7 @@ RiskManager day roll / daily loss limit → SL/TP → strategy signals → `Risk
 3. Register it in `strategy/registry.py` (`STRATEGIES` + `DEFAULT_PARAMS`).
 4. Add a test (at least: it trades on the sample data and never sees unclosed candles).
 
-## Commands (from `backend/`, venv active or prefix `.venv/Scripts/`)
+## Commands (from `backend/`, venv active or prefix `.venv/Scripts/` — `.venv/bin/` on Linux/macOS)
 ```bash
 zirak data-stats                                   # what data is available
 zirak backtest --strategy ema_cross --symbol BTCTMN --resolution 1h
@@ -110,6 +113,8 @@ Frontend (from `frontend/`): `npm run dev` (http://localhost:3000; reads `NEXT_P
   `DATA_SOURCE=replay` replays recorded data (DB, else the real sample) — works offline.
   `DATA_SOURCE=wallex` = paper trading on LIVE Wallex data: signals on real closed candles, paper fills
   walk the real order book (`BotRunner._live_loop`, polls every `LIVE_POLL_S`).
+  Stale data (candle closed > `STALE_DATA_S` ago, silent feed, empty/crossed book) blocks new buys;
+  10 consecutive data failures stop the bot via the kill path.
 - Live money: `LIVE_TRADING=true`, `MAX_ORDER_TMN`,
   `MAX_ORDER_USDT`, `DAILY_LOSS_LIMIT_PCT`, `WALLEX_API_KEY`, and no KILL file. `/api/health`
   lists any remaining `live_blockers`. Never turn live on without the user confirming risk limits.

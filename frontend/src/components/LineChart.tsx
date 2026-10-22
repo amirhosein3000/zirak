@@ -135,9 +135,6 @@ export function LineChart({ x, series, height = 200, format, area = false, basel
           {ticks.map((t, i) => (
             <g key={i}>
               <line x1={PAD.left} x2={PAD.left + innerW} y1={sy(t)} y2={sy(t)} stroke="var(--border)" strokeWidth="1" />
-              <text x={PAD.left + 2} y={sy(t) - 3} fontSize="10" fill="var(--muted)" className="num">
-                {format(t)}
-              </text>
             </g>
           ))}
           {area && series[0] && (
@@ -176,6 +173,22 @@ export function LineChart({ x, series, height = 200, format, area = false, basel
                 />
               );
             })}
+          {/* Tick labels after the lines, with a halo, so a line never runs through a number. */}
+          {ticks.map((t, i) => (
+            <text
+              key={i}
+              x={PAD.left + 2}
+              y={sy(t) - 3}
+              fontSize="10"
+              fill="var(--muted)"
+              stroke="var(--surface)"
+              strokeWidth="3"
+              paintOrder="stroke"
+              className="num"
+            >
+              {format(t)}
+            </text>
+          ))}
           {labelRoom > 0 &&
             series.map((s) => (
               <text key={s.name} x={sx(n - 1) + 6} y={sy(s.values[n - 1]) + 4} fontSize="10.5" fill="var(--text)" fontWeight="700">
