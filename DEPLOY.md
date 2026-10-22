@@ -24,31 +24,23 @@
 لیارا در ایران است، پس ربات مستقیم به API والکس دسترسی دارد و سرور جدا لازم نیست. دو اپ ساخته می‌شود:
 `zirak-api` (API + عامل معاملاتی در یک کانتینر، با دیسک دائمی برای داده‌ها) و `zirak-web` (داشبورد).
 
-**یک بار در پنل لیارا (بخش تیم):**
-1. در تیم، دو اپ از نوع **Docker** بسازید: `zirak-api` و `zirak-web` (اگر نام دیگری گذاشتید، در GitHub متغیرهای
-   `LIARA_API_APP` و `LIARA_WEB_APP` را تنظیم کنید).
-2. برای `zirak-api` یک **دیسک** به نام `zirak-data` بسازید (حداقل ۱ گیگ). در `backend/liara.json` به `/data` وصل می‌شود.
-3. **متغیرهای محیطی** اپ `zirak-api` را در پنل لیارا (تنظیمات ← متغیرها) وارد کنید؛ کلیدها **فقط** همین‌جا، نه در گیت‌هاب:
-   ```
-   WALLEX_API_KEY=<کلید حساب اعتباری چالش>       WALLEX_CREDIT_ACCOUNT=true
-   WALLEX_SUB_ACCOUNT_CLIENT_ID=...               WALLEX_PROP_PACKAGE_ID=...
-   MOCK_LLM=false  LLM_BASE_URL=...  LLM_API_KEY=...  LLM_MODEL=...
-   LIVE_TRADING=false  MAX_ORDER_TMN=1500000  MAX_ORDER_USDT=50  DAILY_LOSS_LIMIT_PCT=2.5
-   DATA_SOURCE=wallex  CORS_ORIGINS=https://zirak-web.liara.run
-   ZIRAK_AGENT=shadow          # off | shadow | live | live,shadow
-   ZIRAK_BOOTSTRAP=true        # بار اول: دانلود سابقهٔ قیمت + آموزش مدل، خودکار
-   ```
-4. یک **توکن API** از حساب کاربری لیارا و **شناسهٔ تیم** (Team ID) را بردارید.
+**فقط یک بار، در گیت‌هاب** (Settings ← Secrets and variables ← Actions). همین کافی است؛ بقیه خودکار است:
+- **Secrets (لازم):** `LIARA_API_TOKEN` (توکن API لیارا)، `WALLEX_API_KEY` (کلید حساب چالش)،
+  و `LIARA_TEAM_ID` (شناسهٔ تیم در لیارا؛ اگر خالی باشد روی حساب شخصیِ صاحب توکن دیپلوی می‌شود).
+- **Secrets (اختیاری):** `LLM_API_KEY`، `WALLEX_SUB_ACCOUNT_CLIENT_ID`.
+- **Variables (اختیاری):** `LIARA_PLAN` (فقط اگر اپ‌ها هنوز در لیارا ساخته نشده‌اند: شناسهٔ پلن از `liara plan list`؛
+  دیپلوی خودش دو اپ Docker و دیسک `zirak-data` را می‌سازد)، `ZIRAK_CHALLENGE_START` و `ZIRAK_CHALLENGE_END`
+  (زمان چالش به **UTC**، مثل `2026-11-01T06:30:00Z`؛ بدون آن، بستن خودکار پوزیشن‌ها در پایان چالش فعال نیست)،
+  `LLM_BASE_URL`، `LLM_MODEL`، `WALLEX_PROP_PACKAGE_ID`، `ZIRAK_AGENT` (پیش‌فرض shadow)، `LIVE_TRADING` (پیش‌فرض false)،
+  `MAX_ORDER_TMN`، `DAILY_LOSS_LIMIT_PCT`.
 
-**یک بار در گیت‌هاب:** Settings ← Secrets and variables ← Actions:
-- **Secrets:** `LIARA_API_TOKEN` (توکن لیارا)، `LIARA_TEAM_ID` (شناسهٔ تیم)، `WALLEX_API_KEY` (کلید حساب چالش)،
-  و اختیاری `LLM_API_KEY`، `WALLEX_SUB_ACCOUNT_CLIENT_ID`.
-- **Variables (اختیاری):** `LLM_BASE_URL`، `LLM_MODEL`، `WALLEX_PROP_PACKAGE_ID`، `ZIRAK_AGENT` (پیش‌فرض shadow)،
-  `LIVE_TRADING` (پیش‌فرض false)، `MAX_ORDER_TMN`، `DAILY_LOSS_LIMIT_PCT`.
-- هر دیپلوی این‌ها را خودکار در متغیرهای اپ `zirak-api` لیارا می‌نویسد؛ پس مرحلهٔ ۳ بالا (وارد کردن دستی متغیرها) لازم نیست.
-
-**هر بار دیپلوی:** Actions ← **Deploy to Liara** ← Run workflow (`both`). اول همهٔ تست‌ها اجرا می‌شوند، بعد دو اپ در
-لیارا (ساخت در ایران) دیپلوی می‌شوند و commit دیپلوی‌شده در هر اجرای ربات ثبت می‌شود.
+**هر بار دیپلوی:** Actions ← **Deploy to Liara** ← Run workflow (`both`). به ترتیب:
+1. همهٔ تست‌ها و بررسی‌های کیفیت.
+2. اگر اپ‌های `zirak-api` / `zirak-web` یا دیسک `zirak-data` (روی `/data`) نیستند، ساخته می‌شوند (با `LIARA_PLAN`؛
+   اگر آن را نگذاشته‌اید، یک بار خودتان در پنل لیارا دو اپ از نوع **Docker** در تیم بسازید؛ پیام خطا همین را می‌گوید).
+3. تنظیمات و کلیدها از Secrets/Variables گیت‌هاب در متغیرهای اپ `zirak-api` لیارا نوشته می‌شوند (حالت سایه، بدون سفارش واقعی).
+4. دو اپ در لیارا (ساخت در ایران) دیپلوی می‌شوند؛ commit دیپلوی‌شده در هر اجرای ربات ثبت می‌شود. بار اول، ربات خودش سابقهٔ
+   قیمت را دانلود و مدل را آموزش می‌دهد (`ZIRAK_BOOTSTRAP=true`).
 از سیستم خودتان هم می‌شود: `LIARA_API_TOKEN=... LIARA_TEAM_ID=... sh scripts/deploy-liara.sh both`
 
 **بعد از دیپلوی:**
@@ -90,8 +82,8 @@
    MAX_ORDER_USDT=50
    DAILY_LOSS_LIMIT_PCT=2.5
    ```
-4. **زمان چالش** را در `backend/config/challenge.json` بنویسید: `"clock": {"start": "...Z", "end": "...Z"}`
-   به وقت **UTC** (= ساعت تهران منهای ۳:۳۰). ربات ۴ ساعت قبل از پایان ورود جدید نمی‌زند و ۳۰ دقیقه قبل از پایان همه‌چیز تومان است.
+4. **زمان چالش** را در `.env` بنویسید: `ZIRAK_CHALLENGE_START=...Z` و `ZIRAK_CHALLENGE_END=...Z`
+   (یا در `backend/config/challenge.json` → `"clock"`) به وقت **UTC** (= ساعت تهران منهای ۳:۳۰). ربات ۴ ساعت قبل از پایان ورود جدید نمی‌زند و ۳۰ دقیقه قبل از پایان همه‌چیز تومان است.
 5. **نصب (فقط اگر بدون Docker کار می‌کنید):**
    ```bash
    cd backend
@@ -180,7 +172,7 @@ docker compose exec agent-shadow zirak agent report /data/runs/challenge-shadow
 5. push و تگ: `git tag challenge-final && git push origin challenge-final`
 
 ## چک‌لیست سریع
-- [ ] اپ‌های `zirak-api` و `zirak-web` + دیسک `zirak-data` در تیم لیارا، متغیرهای اپ، Secrets گیت‌هاب (یا: سرور داخل ایران + Docker)
+- [ ] Secrets گیت‌هاب (`LIARA_API_TOKEN`، `WALLEX_API_KEY`، `LIARA_TEAM_ID`) + `ZIRAK_CHALLENGE_START/END` (یا: سرور داخل ایران + Docker)
 - [ ] `.env` کامل (کلید حساب اعتباری، LLM، سقف‌ها، `LIVE_TRADING=false`)
 - [ ] زمان شروع/پایان در `challenge.json` به UTC
 - [ ] backfill → train → backtest → verify (ok)

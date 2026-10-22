@@ -7,10 +7,13 @@
 #   LIARA_API_TOKEN   Liara API token (from the team's account)
 #   LIARA_TEAM_ID     Liara team id (leave unset to deploy to the token owner's personal account)
 # Optional repository variables: LIARA_API_APP (default zirak-api), LIARA_WEB_APP (default zirak-web),
-#   LIARA_API_URL (default https://<api app>.liara.run, baked into the web app).
+#   LIARA_API_URL (default https://<api app>.liara.run, baked into the web app),
+#   LIARA_PLAN (only needed when the apps don't exist yet: the deploy then creates them on this plan),
+#   LIARA_FEATURE_PLAN (default standard), LIARA_DISK_GB (default 5; the API app's /data disk).
 # Optional secrets synced into the Liara API app on every deploy: WALLEX_API_KEY, WALLEX_SUB_ACCOUNT_CLIENT_ID,
 #   LLM_API_KEY. Optional variables: LLM_BASE_URL, LLM_MODEL, WALLEX_PROP_PACKAGE_ID, ZIRAK_AGENT (shadow),
-#   LIVE_TRADING (false), MAX_ORDER_TMN, MAX_ORDER_USDT, DAILY_LOSS_LIMIT_PCT, WALLEX_CREDIT_ACCOUNT (true).
+#   ZIRAK_CHALLENGE_START / ZIRAK_CHALLENGE_END (UTC ISO-8601, e.g. 2026-11-01T06:30:00Z; drive the
+#   end-of-challenge flatten), LIVE_TRADING (false), MAX_ORDER_TMN, MAX_ORDER_USDT, DAILY_LOSS_LIMIT_PCT, WALLEX_CREDIT_ACCOUNT (true).
 #   Real orders only when LIVE_TRADING=true and ZIRAK_AGENT includes live: set those only after the team agrees.
 name: Deploy to Liara
 
@@ -64,6 +67,14 @@ jobs:
         run: npm install -g @liara/cli
       - name: Check the token is set
         run: test -n "$LIARA_API_TOKEN" || { echo "::error::set the LIARA_API_TOKEN repository secret"; exit 1; }
+      - name: Create the Liara apps and the data disk if missing
+        env:
+          LIARA_PLAN: ${{ vars.LIARA_PLAN }}
+          LIARA_FEATURE_PLAN: ${{ vars.LIARA_FEATURE_PLAN }}
+          LIARA_DISK_GB: ${{ vars.LIARA_DISK_GB }}
+          LIARA_API_APP: ${{ env.API_APP }}
+          LIARA_WEB_APP: ${{ env.WEB_APP }}
+        run: sh scripts/liara-provision.sh "${{ inputs.target }}"
       - name: Sync settings and trading secrets to the API app
         if: inputs.target != 'web'
         env:
@@ -74,6 +85,8 @@ jobs:
           LLM_MODEL: ${{ vars.LLM_MODEL }}
           WALLEX_PROP_PACKAGE_ID: ${{ vars.WALLEX_PROP_PACKAGE_ID }}
           WEB_URL: ${{ vars.LIARA_WEB_URL }}
+          CHALLENGE_START: ${{ vars.ZIRAK_CHALLENGE_START }}
+          CHALLENGE_END: ${{ vars.ZIRAK_CHALLENGE_END }}
         run: |
           # Non-secret settings come from repository variables (safe defaults: shadow mode, no real orders).
           set -- \
@@ -88,6 +101,8 @@ jobs:
             "WALLEX_CREDIT_ACCOUNT=${{ vars.WALLEX_CREDIT_ACCOUNT || 'true' }}"
           [ -n "$WALLEX_API_KEY" ] && set -- "$@" "WALLEX_API_KEY=$WALLEX_API_KEY"
           [ -n "$WALLEX_SUB_ACCOUNT_CLIENT_ID" ] && set -- "$@" "WALLEX_SUB_ACCOUNT_CLIENT_ID=$WALLEX_SUB_ACCOUNT_CLIENT_ID"
+          [ -n "$CHALLENGE_START" ] && set -- "$@" "ZIRAK_CHALLENGE_START=$CHALLENGE_START"
+          [ -n "$CHALLENGE_END" ] && set -- "$@" "ZIRAK_CHALLENGE_END=$CHALLENGE_END"
           [ -n "$WALLEX_PROP_PACKAGE_ID" ] && set -- "$@" "WALLEX_PROP_PACKAGE_ID=$WALLEX_PROP_PACKAGE_ID"
           if [ -n "$LLM_API_KEY" ] && [ -n "$LLM_BASE_URL" ] && [ -n "$LLM_MODEL" ]; then
             set -- "$@" "MOCK_LLM=false" "LLM_API_KEY=$LLM_API_KEY" "LLM_BASE_URL=$LLM_BASE_URL" "LLM_MODEL=$LLM_MODEL"

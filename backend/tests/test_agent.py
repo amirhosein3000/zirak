@@ -571,3 +571,17 @@ def test_agent_api_lists_runs_and_explains_decisions(tmp_path: Path) -> None:
         cand = next(d for d in s["decisions"] if d["kind"] == "candidate")
         assert c.get(f"/api/agent/runs/bt/decisions/{cand['id']}").json()["decision"]["id"] == cand["id"]
         assert c.get("/api/agent/runs/../etc").status_code == 404
+
+
+def test_challenge_window_from_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    path = tmp_path / "cfg.json"
+    path.write_text(json.dumps({"clock": {"no_entry_before_end_h": 2}}), encoding="utf-8")
+    monkeypatch.setenv("ZIRAK_CHALLENGE_START", "2026-11-01T06:30:00Z")
+    monkeypatch.setenv("ZIRAK_CHALLENGE_END", "2026-11-04T06:30:00+00:00")
+    cfg = AgentConfig.load(path)
+    assert cfg.clock.start == datetime(2026, 11, 1, 6, 30, tzinfo=UTC)
+    assert cfg.clock.end == datetime(2026, 11, 4, 6, 30, tzinfo=UTC)
+    assert cfg.clock.no_entry_before_end_h == 2
+    monkeypatch.setenv("ZIRAK_CHALLENGE_END", "2026-11-04T06:30:00")  # no zone: refused, never guessed
+    with pytest.raises(ValueError):
+        AgentConfig.load(path)

@@ -7,6 +7,7 @@ or a replay with the same file, data and model gives the same decisions.
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Literal
@@ -100,6 +101,18 @@ class AgentConfig(BaseModel):
 
     @classmethod
     def load(cls, path: Path | None) -> AgentConfig:
-        if path is None:
-            return cls.model_validate({})
-        return cls.model_validate(json.loads(Path(path).read_text(encoding="utf-8")))
+        raw = {} if path is None else json.loads(Path(path).read_text(encoding="utf-8"))
+        # The challenge window is set at deploy time (ZIRAK_CHALLENGE_START / _END, ISO-8601 with a zone),
+        # so the same committed config file works without an edit.
+        clock = dict(raw.get("clock") or {})
+        for key in ("start", "end"):
+            value = os.environ.get(f"ZIRAK_CHALLENGE_{key.upper()}", "").strip()
+            if value:
+                clock[key] = value
+        if clock:
+            raw["clock"] = clock
+        cfg = cls.model_validate(raw)
+        for when in (cfg.clock.start, cfg.clock.end):
+            if when is not None and when.tzinfo is None:
+                raise ValueError("challenge clock times need a time zone (for example 2026-11-01T06:30:00Z)")
+        return cfg

@@ -32,7 +32,10 @@ Deliverables: 5-min demo video, GitHub + one md document, decision logs.
 - [x] **Liara deployment** (team account): GitHub Action `Deploy to Liara` (manual, quality gates first),
       `scripts/deploy-liara.sh`, `liara.json` for API (+ persistent disk) and web, `start.sh` runs the API plus
       the supervised agent in one container (bootstrap backfill + train on first start). Image tested here.
-      Not deployed yet: the tokens weren't available to this session and Liara/Wallex aren't reachable from it.
+      The deploy creates missing apps + the `zirak-data` disk (`scripts/liara-provision.sh`, needs `LIARA_PLAN`;
+      Liara API calls copied from the official CLI, not run against Liara from here: UNVERIFIED) and syncs the
+      challenge window (`ZIRAK_CHALLENGE_START/END` env overrides of the agent clock). Only the GitHub secrets are missing.
+      Not deployed yet: Liara/Wallex aren't reachable from this session and GitHub secrets can't be set from it.
 
 ### Honest numbers so far
 Bundled real sample (1h, 60 days, placeholder fees 0.25/0.20 %), last 30 days walk-forward: +0.18 %

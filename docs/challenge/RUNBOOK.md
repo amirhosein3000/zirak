@@ -16,7 +16,8 @@ cp ../.env.example ../.env                           # then edit ../.env:
 #   LIVE_TRADING=false   (stays false until step 5)
 #   MAX_ORDER_TMN=1500000  MAX_ORDER_USDT=50  DAILY_LOSS_LIMIT_PCT=2.5
 ```
-Set the challenge window in `config/challenge.json` → `"clock": {"start": "...Z", "end": "...Z"}` (UTC!
+Set the challenge window: `ZIRAK_CHALLENGE_START=...Z` / `ZIRAK_CHALLENGE_END=...Z` in `../.env` (or the GitHub
+variables of the same name for Liara), or `config/challenge.json` → `"clock"` (UTC!
 Tehran is UTC+3:30). The engine stops new entries 4 h before the end and is all Toman 30 min before it.
 
 ## 1. Data and model (≈ 10 min)
