@@ -47,6 +47,7 @@ backend/zirak/
   engine/          risk.py (RiskManager), executor.py, bot.py (one strategy on one market), runner.py (paper bot + kill switch)
   backtest/        engine.py (replays through the same Bot), metrics.py
   llm/             provider.py (OpenAI-compatible + mock), brief.py, builder.py, explain.py
+  modules/         optional features behind the MODULES flag (see "Modules" below)
   api/main.py      FastAPI app
   cli.py           `zirak` command
 backend/tests/     pytest; fixtures/wallex = REAL Wallex sample (default replay data),
@@ -83,6 +84,27 @@ Data flow per closed candle (`engine/bot.py`): paper matching → sync fills int
 RiskManager day roll / daily loss limit → SL/TP → strategy signals → `RiskManager.review` →
 `Executor` → log entry (signal, indicators, decision, fill, PnL) for "why did the bot do that?".
 
+## Modules (optional, `MODULES` env flag; default all)
+Each module is one backend file in `zirak/modules/` exposing `router` (mounted at `/api/m/<name>`),
+one test block in `tests/test_modules.py`, and one card in `frontend/src/components/modules/`
+shown on `/tools` only when `/api/modules` lists it. Modules read data through the API `State`,
+work offline (MOCK_LLM, replay data), and never place orders (competition runs paper bots).
+To switch one off: drop its name from `MODULES`. To remove it: delete its file, test block, entry in
+`modules/__init__.py` `AVAILABLE`, and its card (a missing file is treated as switched off).
+
+| Module | What | Extra flags | Files |
+|---|---|---|---|
+| `regime` | trending/ranging/volatile; `RegimeGated` blocks entries outside allowed regimes | — | `modules/regime.py`, `RegimeCard.tsx` |
+| `orderbook` | spread, depth, imbalance, walls, fair Toman price of USDT | — | `modules/orderbook.py`, `BookCard.tsx` |
+| `news` | mock or RSS/Atom headlines, keyword sentiment, Persian summary | `NEWS_SOURCE`, `NEWS_RSS_URLS`, `NEWS_RISK` | `modules/news.py`, `NewsCard.tsx` |
+| `portfolio` | target allocation + threshold rebalancing backtest, `/suggest` | — | `modules/portfolio.py`, `PortfolioCard.tsx` |
+| `alerts` | price/RSI/bot-PnL alerts, in-app + Telegram/Bale | `ALERTS_*` | `modules/alerts.py`, `AlertsCard.tsx` |
+| `coach` | deterministic trade-habit findings, Persian feedback | — | `modules/coach.py`, `CoachCard.tsx` |
+| `competition` | multi-strategy paper sleeves, team limits, `performance.json` | — | `modules/competition.py`, `zirak compete`, `CompetitionCard.tsx` |
+
+The only core hooks modules use: `RiskManager.size_factor` (0..1, shrinks new buys; news) and
+`ReplayExchange.fork()` (independent cursor; competition).
+
 ## How to add a strategy
 1. Subclass `Strategy` in `strategy/` (see `baseline.py`): set `key`, `title_fa`, `description_fa`,
    `warmup`; implement `on_candle(ctx) -> list[Signal]`. Use only `ctx.df` (closed candles).
@@ -98,6 +120,7 @@ zirak data-stats                                   # what data is available
 zirak backtest --strategy ema_cross --symbol BTCTMN --resolution 1h
 zirak backtest --spec '{"symbol":"BTCTMN","entry":[{"kind":"drop_from_high","pct":5,"lookback":24}],"position_size_pct":10,"take_profit_pct":3,"stop_loss_pct":5}'
 zirak paper --strategy rsi_reversion --symbol ETHTMN --speed 0.2   # headless paper bot on replayed data
+zirak compete [--config cfg.json] [--speed 0.2]    # competition mode (paper, team limits, perf file)
 zirak kill                                         # KILL SWITCH (KILL file + API call)
 zirak reset-kill
 zirak serve --reload                               # API on :8000

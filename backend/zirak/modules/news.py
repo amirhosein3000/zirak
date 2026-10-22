@@ -25,6 +25,7 @@ from fastapi import APIRouter, Request
 from zirak.config import Settings
 from zirak.i18n import fa_num
 from zirak.llm.provider import LLMProvider
+from zirak.markets import ASSET_NAMES_FA
 from zirak.models import ensure_utc, utcnow
 
 POSITIVE = {
@@ -256,7 +257,7 @@ def label_for(score: float) -> str:
 def template_summary(items: list[NewsItem], score: float, asset: str | None) -> str:
     pos = sum(1 for i in items if i.score > 0)
     neg = sum(1 for i in items if i.score < 0)
-    about = f" دربارهٔ {asset}" if asset else ""
+    about = f" دربارهٔ {ASSET_NAMES_FA.get(asset, asset)}" if asset else ""
     text = (
         f"از {fa_num(len(items), 0)} خبر اخیر{about}، {fa_num(pos, 0)} خبر لحن مثبت و "
         f"{fa_num(neg, 0)} خبر لحن منفی دارند؛ حال‌وهوای کلی خبرها «{label_for(score)}» است."
