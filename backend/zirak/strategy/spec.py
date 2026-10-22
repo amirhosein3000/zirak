@@ -4,6 +4,8 @@ runs it deterministically. The LLM can only describe rules from this small vocab
 
 from __future__ import annotations
 
+import math
+import re
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -14,6 +16,30 @@ from zirak.indicators import ema, last, pct_change_from_high, pct_change_from_lo
 from zirak.markets import ASSET_NAMES_FA, DEFAULT_MARKETS
 from zirak.models import HUNDRED, RESOLUTION_SECONDS, Side
 from zirak.strategy.base import Signal, Strategy, StrategyContext
+
+# Persian labels for the visual builder: what each condition means and which fields it takes.
+CONDITION_FA: dict[str, dict[str, Any]] = {
+    "drop_from_high": {"title_fa": "ریزش از سقف اخیر", "fields": ["pct", "minutes"]},
+    "rise_from_low": {"title_fa": "رشد از کف اخیر", "fields": ["pct", "minutes"]},
+    "rsi_below": {"title_fa": "RSI کمتر از", "fields": ["value", "period"]},
+    "rsi_above": {"title_fa": "RSI بیشتر از", "fields": ["value", "period"]},
+    "ema_cross_up": {"title_fa": "تقاطع صعودی میانگین‌ها", "fields": ["fast", "slow"]},
+    "ema_cross_down": {"title_fa": "تقاطع نزولی میانگین‌ها", "fields": ["fast", "slow"]},
+    "price_below": {"title_fa": "قیمت پایین‌تر از", "fields": ["value"]},
+    "price_above": {"title_fa": "قیمت بالاتر از", "fields": ["value"]},
+}
+
+SYMBOL_RE = re.compile(r"^[A-Z0-9]{2,15}(TMN|USDT)$")
+
+
+def window_fa(minutes: int) -> str:
+    """۳۰ دقیقه / ۲ ساعت / ۳ روز."""
+    if minutes % 1440 == 0:
+        return f"{fa_num(minutes // 1440, 0)} روز"
+    if minutes % 60 == 0:
+        return f"{fa_num(minutes // 60, 0)} ساعت"
+    return f"{fa_num(minutes, 0)} دقیقه"
+
 
 ConditionKind = Literal[
     "drop_from_high",  # close is >= pct % below the highest high of the last `lookback` candles
@@ -26,13 +52,14 @@ ConditionKind = Literal[
     "price_above",
 ]
 
-RESOLUTION_FA = {"15m": "۱۵ دقیقه‌ای", "1h": "یک‌ساعته", "4h": "چهارساعته", "1d": "روزانه"}
+RESOLUTION_FA = {"5m": "۵ دقیقه‌ای", "15m": "۱۵ دقیقه‌ای", "1h": "یک‌ساعته", "4h": "چهارساعته", "1d": "روزانه"}
 
 
 class Condition(BaseModel):
     kind: ConditionKind
     pct: float | None = Field(None, gt=0, le=90)
-    lookback: int | None = Field(None, ge=2, le=500)
+    lookback: int | None = Field(None, ge=2, le=2000)
+    minutes: int | None = Field(None, ge=1, le=43200)  # time window; the spec turns it into `lookback`
     value: float | None = Field(None, gt=0)
     period: int | None = Field(None, ge=2, le=200)
     fast: int | None = Field(None, ge=2, le=200)
@@ -63,6 +90,13 @@ class Condition(BaseModel):
 
     def describe_fa(self, asset_fa: str) -> str:
         k = self.kind
+        if k in ("drop_from_high", "rise_from_low") and self.minutes:
+            word = "پایین بیاید" if k == "drop_from_high" else "بالا برود"
+            ref = "سقف" if k == "drop_from_high" else "کف"
+            return (
+                f"قیمت {asset_fa} در {window_fa(self.minutes)} اخیر حداقل {fa_pct(self.pct or 0)} "
+                f"از {ref} همان بازه {word}"
+            )
         if k == "drop_from_high":
             return (
                 f"قیمت {asset_fa} نسبت به بالاترین قیمت {fa_num(self.lookback or 0, 0)} کندل اخیر "
@@ -116,7 +150,7 @@ class StrategySpec(BaseModel):
     version: Literal[1] = 1
     name: str = Field("استراتژی من", max_length=80)
     symbol: str
-    resolution: Literal["15m", "1h", "4h", "1d"] = "1h"
+    resolution: Literal["5m", "15m", "1h", "4h", "1d"] = "1h"
     entry: list[Condition] = Field(min_length=1, max_length=5)  # all must hold (AND)
     exit: list[Condition] = Field(default_factory=list, max_length=5)  # any triggers a full exit (OR)
     position_size_pct: float = Field(10, gt=0, le=100)
@@ -127,8 +161,16 @@ class StrategySpec(BaseModel):
 
     @model_validator(mode="after")
     def _check_symbol(self) -> StrategySpec:
-        if self.symbol not in DEFAULT_MARKETS:
+        # Any Wallex-style symbol; the API rejects markets it has no data for.
+        if self.symbol not in DEFAULT_MARKETS and not SYMBOL_RE.match(self.symbol):
             raise ValueError(f"unknown market {self.symbol}")
+        candle_s = RESOLUTION_SECONDS[self.resolution]
+        for c in [*self.entry, *self.exit]:
+            if c.minutes and c.kind in ("drop_from_high", "rise_from_low"):
+                if c.minutes * 60 < candle_s:
+                    raise ValueError("time window is shorter than one candle")
+                # the window includes the signal candle: 30 min on 5m candles = the last 6 candles
+                c.lookback = min(2000, max(2, math.ceil(c.minutes * 60 / candle_s)))
         return self
 
     @property
@@ -137,9 +179,9 @@ class StrategySpec(BaseModel):
 
     def describe_fa(self) -> list[str]:
         """Plain-Persian bullet lines the user confirms before anything runs."""
-        m = DEFAULT_MARKETS[self.symbol]
-        asset = ASSET_NAMES_FA.get(m.base, m.base)
-        quote = ASSET_NAMES_FA.get(m.quote, m.quote)
+        base, quote_code = split_symbol(self.symbol)
+        asset = ASSET_NAMES_FA.get(base, base)
+        quote = ASSET_NAMES_FA.get(quote_code, quote_code)
         lines = [f"بازار: {asset} به {quote} — کندل‌های {RESOLUTION_FA[self.resolution]}"]
         conds = " و ".join(c.describe_fa(asset) for c in self.entry)
         lines.append(f"خرید: وقتی {conds}، با {fa_pct(self.position_size_pct, 0)} از سرمایه")
@@ -203,6 +245,14 @@ class RuleStrategy(Strategy):
                 indicators,
             )
         ]
+
+
+def split_symbol(symbol: str) -> tuple[str, str]:
+    m = DEFAULT_MARKETS.get(symbol)
+    if m:
+        return m.base, m.quote
+    quote = "USDT" if symbol.endswith("USDT") else "TMN"
+    return symbol[: -len(quote)], quote
 
 
 def resolution_ok(resolution: str) -> bool:

@@ -87,3 +87,35 @@ def test_spec_validation_rejects_nonsense() -> None:
         StrategySpec.model_validate(
             {"symbol": "BTCTMN", "entry": [{"kind": "rsi_below", "value": 20}], "position_size_pct": 150}
         )
+
+
+def test_shock_reversal_sentence() -> None:
+    """The user's idea: a >10% move within 30 minutes -> trade against it, 1% target (spot: buy the dump)."""
+    text = "هر وقت ارزی زیر ۳۰ دقیقه بیشتر از ۱۰ درصد قیمتش جابجا شد در جهت مخالفش وارد ترید شو و تارگتت ۱ درصد باشه"
+    r = parse_rules(text, default_symbol="BTCTMN")
+    assert r.spec is not None, r.error_fa
+    s = r.spec
+    assert s.resolution == "5m" and s.take_profit_pct == 1 and s.stop_loss_pct == 5
+    c = s.entry[0]
+    assert c.kind == "drop_from_high" and c.pct == 10 and c.minutes == 30 and c.lookback == 6
+    assert any("شورت" in w for w in r.warnings_fa)  # the impossible side is spelled out
+    assert any("همهٔ بازارها" in w for w in r.warnings_fa)
+    assert "۳۰ دقیقه" in r.description_fa[1]
+
+
+def test_minutes_window_becomes_candles() -> None:
+    def spec(res: str, minutes: int) -> StrategySpec:
+        return StrategySpec.model_validate(
+            {
+                "symbol": "SOLTMN",
+                "resolution": res,
+                "entry": [{"kind": "drop_from_high", "pct": 4, "minutes": minutes}],
+            }
+        )
+
+    assert spec("15m", 30).entry[0].lookback == 2
+    assert spec("1h", 1440).entry[0].lookback == 24
+    with pytest.raises(ValueError):
+        spec("1h", 30)  # a window shorter than one candle
+    with pytest.raises(ValueError):
+        StrategySpec.model_validate({"symbol": "not-a-market", "entry": [{"kind": "rsi_below", "value": 20}]})

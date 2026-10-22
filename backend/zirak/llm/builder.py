@@ -72,38 +72,46 @@ def _symbol(t: str, default_symbol: str | None) -> tuple[str | None, list[str]]:
     return f"{base}{quote}", warnings
 
 
-def _resolution(t: str) -> str:
+def _resolution(t: str, window_min: int | None) -> str:
     if re.search(r"روزانه|روزی|هر روز", t):
         return "1d"
     if re.search(r"۴\s*ساعت|4\s*ساعت|چهار\s*ساعت", t):
         return "4h"
-    if re.search(r"۱۵\s*دقیقه|15\s*دقیقه|ربع", t):
+    if re.search(r"(چارت|کندل|تایم)\s*(۵|5|پنج)\s*دقیقه", t):
+        return "5m"
+    if re.search(r"۱۵\s*دقیقه|15\s*دقیقه|ربع", t) and window_min != 15:
         return "15m"
+    if window_min is not None and window_min <= 180:
+        return "5m"  # "within 30 minutes" needs candles shorter than the window
     return "1h"
 
 
-def _lookback_hours(t: str) -> int | None:
-    unit = r"\s*(ساعت|روز|هفته)(?!ه)"  # "۴ ساعته" names the chart, not a lookback
-    m = re.search(r"(?:در|طی|ظرف)\s*" + NUM + unit, t) or re.search(NUM + unit, t)
+def _window_minutes(t: str) -> int | None:
+    """The time window of a move: «در ۳۰ دقیقه»، «زیر ۲ ساعت»، «طی ۳ روز»."""
+    unit = r"\s*(دقیقه|ساعت|روز|هفته)(?!ه|‌ای| ای)"  # "۴ ساعته" names the chart, not a window
+    m = re.search(r"(?:در|طی|ظرف|زیر|کمتر از|توی|تو)\s*" + NUM + unit, t) or re.search(NUM + unit, t)
     if m:
         n = float(m.group(1))
-        return int(n * {"ساعت": 1, "روز": 24, "هفته": 168}[m.group(2)])
+        return int(n * {"دقیقه": 1, "ساعت": 60, "روز": 1440, "هفته": 10080}[m.group(2)])
     if re.search(r"یک روز|یه روز|امروز", t):
-        return 24
+        return 1440
     if re.search(r"یک هفته|یه هفته", t):
-        return 168
+        return 10080
     return None
 
 
 # What a percentage means, judged by the keyword right before it ("حد ضرر ۴٪") or the nearest one after it.
-PCT_BEFORE = [("tp", r"(حد\s*سود|تارگت|هدف)\s*:?\s*$"), ("sl", r"(حد\s*ضرر|حد\s*زیان|استاپ)\s*:?\s*$")]
+PCT_BEFORE = [("tp", r"(حد\s*سود|تارگت\w*|هدف\w*)\s*:?\s*$"), ("sl", r"(حد\s*ضرر|حد\s*زیان|استاپ)\s*:?\s*$")]
 PCT_AFTER = [
     ("tp", r"سود"),
     ("sl", r"ضرر|زیان|استاپ"),
     ("size", r"سرمایه|موجودی|پول|دارایی|بودجه"),
     ("drop", r"ریخت|بریزه|بریزد|افت|کاهش|ریزش|پایین|کم شد|سقوط|دامپ"),
     ("rise", r"رشد|افزایش|بالا|پامپ|جهش"),
+    ("move", r"جابجا|جابه‌جا|جا به جا|تغییر|نوسان|حرکت"),
 ]
+CONTRARIAN = r"مخالف|خلاف|برعکس|عکس جهت|برگشت"
+ANY_ASSET = r"هر\s*(ارز|کوین|رمز\s*ارز)|(^|\s)ارزی(\s|$)|هر\s*بازار"
 
 
 def _classify_pct(before: str, after: str) -> str | None:
@@ -122,9 +130,15 @@ def parse_rules(text: str, default_symbol: str | None = None) -> BuildResult:
     """Rule-based Persian parser for common phrasings. Deterministic; used offline and as LLM fallback."""
     t = normalize(text)
     symbol, warnings = _symbol(t, default_symbol)
+    if symbol and re.search(ANY_ASSET, t):
+        warnings = [
+            f"این قانون برای همهٔ ارزهاست؛ روی {symbol} ساخته شد. با «بک‌تست روی همهٔ بازارها» "
+            "روی تک‌تک بازارهای تومانی امتحانش کنید."
+        ]
     if symbol is None:
         return BuildResult(None, error_fa="ارز مورد نظر را پیدا نکردم. مثلاً بنویسید «بیت‌کوین» یا «اتریوم».")
-    resolution = _resolution(t)
+    window = _window_minutes(t)
+    resolution = _resolution(t, window)
     entry: list[dict[str, Any]] = []
     size = tp = sl = None
     for m in re.finditer(PCT, t):
@@ -140,6 +154,20 @@ def parse_rules(text: str, default_symbol: str | None = None) -> BuildResult:
             entry.append({"kind": "drop_from_high", "pct": value})
         elif kind == "rise":
             entry.append({"kind": "rise_from_low", "pct": value})
+        elif kind == "move":
+            if re.search(CONTRARIAN, t):
+                # Against the move: buy after a sharp drop. The other side (short after a pump) is
+                # impossible on spot, so it is left out and the user is told.
+                entry.append({"kind": "drop_from_high", "pct": value})
+                warnings.append(
+                    "«خلاف جهت» در بازار اسپات فقط یک طرف دارد: بعد از ریزش تند می‌خرد. "
+                    "بعد از جهش تند نمی‌شود فروش استقراضی (شورت) کرد، پس آن طرف اجرا نمی‌شود."
+                )
+            else:
+                entry.append({"kind": "rise_from_low", "pct": value})
+                warnings.append(
+                    "جهت حرکت را نگفتید؛ «همراه با رشد» در نظر گرفته شد. اگر منظورتان ریزش است بنویسید «ریخت»."
+                )
     m_rsi = re.search(r"(rsi|آر\s*اس\s*آی)[^\d]{0,20}" + r"(زیر|کمتر از|پایین‌تر از|پایین تر از)\s*" + NUM, t)
     if m_rsi:
         entry.append({"kind": "rsi_below", "value": float(m_rsi.group(3))})
@@ -151,12 +179,10 @@ def parse_rules(text: str, default_symbol: str | None = None) -> BuildResult:
             warnings_fa=warnings,
             error_fa="شرط خرید را متوجه نشدم. مثال: «وقتی بیت‌کوین ۵٪ ریخت، با ۱۰٪ سرمایه بخر و با ۳٪ سود بفروش».",
         )
-    lookback = _lookback_hours(t)
-    candle_hours = {"15m": 0.25, "1h": 1, "4h": 4, "1d": 24}[resolution]
     for cond in entry:
         if cond["kind"] in ("drop_from_high", "rise_from_low"):
-            cond["lookback"] = max(2, int((lookback or 24) / candle_hours))
-            if lookback is None:
+            cond["minutes"] = window or 1440
+            if window is None:
                 warnings.append("بازهٔ زمانی ریزش/رشد مشخص نبود؛ ۲۴ ساعت گذشته در نظر گرفته شد.")
     if size is None:
         size = DEFAULT_SIZE
@@ -174,7 +200,7 @@ def parse_rules(text: str, default_symbol: str | None = None) -> BuildResult:
         "position_size_pct": size,
         "take_profit_pct": tp,
         "stop_loss_pct": sl,
-        "cooldown_candles": 3,
+        "cooldown_candles": 6 if resolution == "5m" else 3,
     }
     try:
         spec = StrategySpec.model_validate(raw)
@@ -187,18 +213,20 @@ SYSTEM_PROMPT = """You convert a Persian trading idea into JSON for a determinis
 Output ONLY a JSON object matching this schema (no prose):
 {
  "name": str, "symbol": one of ["USDTTMN","BTCTMN","BTCUSDT","ETHTMN","ETHUSDT"],
- "resolution": one of ["15m","1h","4h","1d"],
+ "resolution": one of ["5m","15m","1h","4h","1d"],
  "entry": [condition, ...]   // ALL must hold to buy
  "exit": [condition, ...]    // ANY triggers a full sell (optional)
  "position_size_pct": number (0-100], "take_profit_pct": number|null, "stop_loss_pct": number|null,
  "max_entries": int>=1, "cooldown_candles": int>=0
 }
-condition = {"kind": "drop_from_high"|"rise_from_low", "pct": number, "lookback": candles}
+condition = {"kind": "drop_from_high"|"rise_from_low", "pct": number, "minutes": time window in minutes}
           | {"kind": "rsi_below"|"rsi_above", "value": 0-100, "period": int}
           | {"kind": "ema_cross_up"|"ema_cross_down", "fast": int, "slow": int}
           | {"kind": "price_below"|"price_above", "value": number}
-Rules: Toman markets end in TMN. "ریخت" (dropped) means drop_from_high; lookback counts candles of the
-chosen resolution (24h on 1h candles = 24). If the user gives no stop-loss, set stop_loss_pct to 5.
+Rules: Toman markets end in TMN (any Wallex symbol like SOLTMN is fine). "ریخت" (dropped) means
+drop_from_high; give windows in minutes (24h = 1440) and pick a resolution shorter than the window (a
+30-minute window needs "5m"). Spot cannot short: "trade against the move" means buy after a drop only.
+"تارگت" is take_profit_pct. If the user gives no stop-loss, set stop_loss_pct to 5.
 Never invent conditions the user did not ask for."""
 
 

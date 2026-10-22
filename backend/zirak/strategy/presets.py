@@ -10,10 +10,30 @@ from typing import Any
 
 PRESETS: list[dict[str, Any]] = [
     {
+        "key": "shock_reversal",
+        "validated": False,
+        "strategy": "rules",
+        "resolution": "5m",
+        "title_fa": "برگشت بعد از ریزش تند",
+        "spec": {
+            "entry": [{"kind": "drop_from_high", "pct": 10, "minutes": 30}],
+            "position_size_pct": 10,
+            "take_profit_pct": 1,
+            "stop_loss_pct": 5,
+            "cooldown_candles": 6,
+        },
+        "note_fa": (
+            "اگر قیمت در ۳۰ دقیقه حداقل ۱۰٪ از سقفش بریزد، خلاف جهت (خرید) وارد می‌شود و با ۱٪ سود می‌فروشد. "
+            "جهت دیگر (فروش استقراضی بعد از جهش) در بازار اسپات ممکن نیست. حد ضرر ۵٪ برای امنیت. (آزمایشی)"
+        ),
+        "evidence": "user idea, 2026-10-23; not walk-forward tested",
+    },
+    {
         "key": "dip3_tp5",
         "validated": False,
         "strategy": "rules",
         "resolution": "1h",
+        "title_fa": "خرید پله‌ای در افت ۳٪",
         "spec": {
             "entry": [{"kind": "drop_from_high", "pct": 3, "lookback": 24}],
             "position_size_pct": 10,
@@ -40,6 +60,21 @@ def preset(key: str) -> dict[str, Any]:
         if p["key"] == key:
             return p
     raise KeyError(key)
+
+
+def templates() -> list[dict[str, Any]]:
+    """Rules presets as starting points for the visual builder (symbol left to the user)."""
+    return [
+        {
+            "key": p["key"],
+            "title_fa": p["title_fa"],
+            "note_fa": p["note_fa"],
+            "validated": p["validated"],
+            "spec": {**p["spec"], "resolution": p["resolution"], "name": p["title_fa"]},
+        }
+        for p in PRESETS
+        if p["strategy"] == "rules"
+    ]
 
 
 def spec_for(key: str, symbol: str) -> dict[str, Any]:

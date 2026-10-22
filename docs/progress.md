@@ -1,6 +1,6 @@
 # Progress
 
-_Last updated: 2026-10-22 (the official Wallex challenge spec arrived; the challenge agent is built)_
+_Last updated: 2026-10-23 (deployed on Liara; visual strategy builder + shock-reversal strategy)_
 
 ## The challenge (spec: docs/challenge/spec.md)
 Performance + technical track: an automated, AI-driven trader on a real Wallex **credit (prop) account**
@@ -35,7 +35,17 @@ Deliverables: 5-min demo video, GitHub + one md document, decision logs.
       The deploy creates missing apps + the `zirak-data` disk (`scripts/liara-provision.sh`, needs `LIARA_PLAN`;
       Liara API calls copied from the official CLI, not run against Liara from here: UNVERIFIED) and syncs the
       challenge window (`ZIRAK_CHALLENGE_START/END` env overrides of the agent clock). Only the GitHub secrets are missing.
-      Not deployed yet: Liara/Wallex aren't reachable from this session and GitHub secrets can't be set from it.
+      **Deployed 2026-10-22** from a local machine to the team "لیارا": `zirak-api` (standard-base-g2, disk
+      `zirak-data` 5 GB) and `zirak-web` (medium-g2) on their own network `zirak-net`; shadow mode,
+      `LIVE_TRADING=false`, mock LLM. g2 plans need a network, which `liara-provision.sh` doesn't pass yet
+      (the apps were created with `liara app create --network zirak-net`).
+- [x] **Visual strategy builder** (`/build`, 2026-10-23): templates, Persian text or blocks all edit one
+      `StrategySpec`; every edit is validated by `/api/strategy/describe` and shown as plain Persian before
+      anything runs; `/api/backtest/markets` runs the same rules on every Toman market. The spec gained
+      time windows in minutes (`minutes` -> `lookback`), 5m candles and any Wallex symbol.
+      New preset `shock_reversal` (user idea): >= 10 % drop from the 30-minute high on 5m candles -> buy,
+      1 % target, 5 % safety stop. The other side of "trade against the move" (short after a pump) is
+      impossible on spot and is left out with a warning. Not walk-forward tested; not part of the challenge agent.
 
 ### Honest numbers so far
 Bundled real sample (1h, 60 days, placeholder fees 0.25/0.20 %), last 30 days walk-forward: +0.18 %

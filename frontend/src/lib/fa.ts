@@ -67,6 +67,7 @@ export function signClass(n: number | string | null | undefined): string {
 
 export const RESOLUTION_FA: Record<string, string> = {
   "1m": "یک‌دقیقه‌ای",
+  "5m": "۵ دقیقه‌ای",
   "15m": "۱۵ دقیقه‌ای",
   "1h": "یک‌ساعته",
   "4h": "چهارساعته",

@@ -44,14 +44,19 @@ from zirak.models import RESOLUTION_SECONDS, Candle, Market, OrderBook, resoluti
 from zirak.modules import AVAILABLE as MODULES_AVAILABLE
 from zirak.modules import mount as mount_modules
 from zirak.strategy.base import Strategy
+from zirak.strategy.presets import templates
 from zirak.strategy.registry import DEFAULT_PARAMS, STRATEGIES, catalog
 from zirak.strategy.registry import build_strategy as make_strategy
-from zirak.strategy.spec import RuleStrategy, StrategySpec
+from zirak.strategy.spec import CONDITION_FA, RESOLUTION_FA, RuleStrategy, StrategySpec
 
 
 class ParseIn(BaseModel):
     text: str = Field(min_length=3, max_length=500)
     symbol: str | None = None
+
+
+class DescribeIn(BaseModel):
+    spec: dict[str, Any]
 
 
 class RunIn(BaseModel):
@@ -242,6 +247,35 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         result = await build_strategy(state.llm, body.text, body.symbol)
         return result.to_dict()
 
+    @app.get("/api/strategy/vocabulary")
+    async def vocabulary() -> dict[str, Any]:
+        """Everything the visual builder can offer: condition blocks, timeframes, markets, templates."""
+        return {
+            "conditions": [{"kind": k, **v} for k, v in CONDITION_FA.items()],
+            "resolutions": [{"key": k, "title_fa": v} for k, v in RESOLUTION_FA.items()],
+            "markets": [
+                {"symbol": m.symbol, "name_fa": market_name_fa(m), "quote": m.quote}
+                for m in sorted(state.replay.markets.values(), key=lambda m: (m.quote != "TMN", m.symbol))
+                if state.replay.series(m.symbol, "1h") or state.replay.series(m.symbol, "1m")
+            ],
+            "templates": templates(),
+        }
+
+    @app.post("/api/strategy/describe")
+    async def describe(body: DescribeIn) -> dict[str, Any]:
+        """Validate a spec from the visual builder and say in Persian exactly what the bot will do."""
+        try:
+            spec = StrategySpec.model_validate(body.spec)
+        except ValidationError as e:
+            err = e.errors()[0]
+            where = ".".join(str(x) for x in err["loc"])
+            return {
+                "spec": None,
+                "description_fa": [],
+                "error_fa": f"قانون معتبر نیست ({where}): {err['msg']}",
+            }
+        return {"spec": spec.model_dump(), "description_fa": spec.describe_fa(), "error_fa": None}
+
     def strategy_and_risk(body: RunIn) -> tuple[Strategy, RiskConfig, str, str]:
         try:
             if body.strategy == "rules":
@@ -308,6 +342,48 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         report["shield"] = risk_shield(report, naked, market.quote)
         save_report(report, state.reports_dir)
         return report
+
+    @app.post("/api/backtest/markets")
+    async def backtest_markets(body: RunIn) -> dict[str, Any]:
+        """The same rules spec on every Toman market with data: "does this idea work on any coin?"."""
+        if body.strategy != "rules" or body.spec is None:
+            raise HTTPException(422, "spec is required")
+        _, _, _, resolution = strategy_and_risk(body)
+        symbols = [
+            m.symbol
+            for m in state.replay.markets.values()
+            if m.quote == "TMN" and state.replay.series(m.symbol, resolution)
+        ][:40]
+        rows: list[dict[str, Any]] = []
+        for symbol in symbols:
+            run = body.model_copy(update={"spec": {**body.spec, "symbol": symbol}})
+            strat, risk, _, _ = strategy_and_risk(run)
+            market, series = market_series(symbol, resolution)
+            period = select_period(series, body.period, resolution)
+            rep = await run_one(strat, risk, market, resolution, period, run)
+            m = rep["metrics"]
+            rows.append(
+                {
+                    "symbol": symbol,
+                    "name_fa": market_name_fa(market),
+                    "return_pct": m["return_pct"],
+                    "buy_hold_return_pct": m["buy_hold_return_pct"],
+                    "max_drawdown_pct": m["max_drawdown_pct"],
+                    "trades": m["trades"],
+                    "win_rate_pct": m["win_rate_pct"],
+                }
+            )
+        rows.sort(key=lambda r: (r["trades"] == 0, -r["return_pct"]))
+        traded = [r for r in rows if r["trades"]]
+        if traded:
+            wins = sum(r["return_pct"] > 0 for r in traded)
+            headline = (
+                f"در {fa_num(len(traded), 0)} بازار از {fa_num(len(rows), 0)} بازار شرط برقرار شد؛ "
+                f"{fa_num(wins, 0)} بازار با سود تمام شد."
+            )
+        else:
+            headline = f"در این دوره شرط خرید در هیچ‌کدام از {fa_num(len(rows), 0)} بازار برقرار نشد."
+        return {"resolution": resolution, "period": body.period, "rows": rows, "headline_fa": headline}
 
     @app.post("/api/duel")
     async def duel(body: RunIn) -> dict[str, Any]:

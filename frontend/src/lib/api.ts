@@ -91,6 +91,7 @@ export type Condition = {
   kind: string;
   pct?: number | null;
   lookback?: number | null;
+  minutes?: number | null;
   value?: number | null;
   period?: number | null;
   fast?: number | null;
@@ -101,7 +102,7 @@ export type StrategySpec = {
   version: 1;
   name: string;
   symbol: string;
-  resolution: "15m" | "1h" | "4h" | "1d";
+  resolution: "5m" | "15m" | "1h" | "4h" | "1d";
   entry: Condition[];
   exit: Condition[];
   position_size_pct: number;
@@ -117,6 +118,29 @@ export type ParseResult = {
   warnings_fa: string[];
   source: string;
   error_fa: string | null;
+};
+
+export type ConditionField = "pct" | "minutes" | "value" | "period" | "fast" | "slow";
+export type Vocabulary = {
+  conditions: { kind: string; title_fa: string; fields: ConditionField[] }[];
+  resolutions: { key: StrategySpec["resolution"]; title_fa: string }[];
+  markets: { symbol: string; name_fa: string; quote: string }[];
+  templates: { key: string; title_fa: string; note_fa: string; validated: boolean; spec: Partial<StrategySpec> }[];
+};
+export type Described = { spec: StrategySpec | null; description_fa: string[]; error_fa: string | null };
+export type MarketScan = {
+  resolution: string;
+  period: string;
+  headline_fa: string;
+  rows: {
+    symbol: string;
+    name_fa: string;
+    return_pct: number;
+    buy_hold_return_pct: number;
+    max_drawdown_pct: number;
+    trades: number;
+    win_rate_pct: number;
+  }[];
 };
 
 export type CatalogItem = { key: string; title_fa: string; description_fa: string; params: Record<string, number> };
@@ -320,7 +344,10 @@ export const api = {
   brief: (symbol: string) => call<Brief>(`/api/markets/${symbol}/brief`),
   strategies: () => call<CatalogItem[]>("/api/strategies"),
   parse: (text: string, symbol?: string) => post<ParseResult>("/api/strategy/parse", { text, symbol }),
+  vocabulary: () => call<Vocabulary>("/api/strategy/vocabulary"),
+  describe: (spec: unknown) => post<Described>("/api/strategy/describe", { spec }),
   backtest: (req: RunRequest) => post<Report>("/api/backtest", req),
+  backtestMarkets: (req: RunRequest) => post<MarketScan>("/api/backtest/markets", req),
   report: (id: string) => call<Report>(`/api/backtests/${id}`),
   explain: (entry: LogEntry) => post<{ explanation_fa: string }>("/api/explain", { entry }),
   botStart: (req: RunRequest) => post<BotStatus>("/api/bot/start", req),

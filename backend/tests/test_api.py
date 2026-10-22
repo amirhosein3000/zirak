@@ -55,3 +55,23 @@ def test_demo_flow(tmp_path: Path) -> None:
         # Cannot restart while the kill switch is engaged.
         assert c.post("/api/bot/start", json={"strategy": "ema_cross"}).status_code == 409
         assert c.post("/api/kill/reset").json()["kill_engaged"] is False
+
+
+def test_visual_builder_endpoints(tmp_path: Path) -> None:
+    with client(tmp_path) as c:
+        vocab = c.get("/api/strategy/vocabulary").json()
+        assert {"drop_from_high", "rsi_below"} <= {x["kind"] for x in vocab["conditions"]}
+        assert any(t["key"] == "shock_reversal" for t in vocab["templates"])
+        assert any(m["symbol"] == "BTCTMN" for m in vocab["markets"])
+
+        bad = c.post("/api/strategy/describe", json={"spec": {"symbol": "BTCTMN", "entry": []}}).json()
+        assert bad["spec"] is None and bad["error_fa"]
+        spec = {"symbol": "BTCTMN", "entry": [{"kind": "drop_from_high", "pct": 3, "minutes": 1440}]}
+        ok = c.post("/api/strategy/describe", json={"spec": spec}).json()
+        assert ok["error_fa"] is None and ok["spec"]["entry"][0]["lookback"] == 24 and ok["description_fa"]
+
+        scan = c.post(
+            "/api/backtest/markets", json={"strategy": "rules", "spec": ok["spec"], "period": "30d"}
+        ).json()
+        assert {r["symbol"] for r in scan["rows"]} >= {"BTCTMN", "ETHTMN"}
+        assert all(r["symbol"].endswith("TMN") for r in scan["rows"]) and scan["headline_fa"]
