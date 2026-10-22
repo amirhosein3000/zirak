@@ -1,0 +1,95 @@
+درخواست برداشت وجه از حساب
+POST
+https://api.wallex.com/v1/account/money-withdrawal
+این API برای ثبت درخواست برداشت وجه از حساب کاربر استفاده می‌شود. نیازمند API Key در هدر است.
+
+Request
+application/json
+Body
+Example (auto)
+Bodyrequired
+iban
+integer
+required
+شناسه IBAN مورد نظر برای برداشت
+
+Example: 3799240
+value
+number
+required
+مقدار برداشت (به ریال)
+
+Example: 20000
+Responses
+201
+درخواست برداشت با موفقیت ثبت شد
+
+application/json
+Schema
+Example (auto)
+response
+Schema
+result
+object
+message
+string
+Example: درخواست برداشت ثبت شد
+success
+boolean
+Example: true
+Authorization: x-api-key
+csharp
+curl
+dart
+go
+http
+java
+javascript
+kotlin
+c
+nodejs
+objective-c
+ocaml
+php
+postman-cli
+powershell
+python
+r
+ruby
+rust
+shell
+swift
+HTTPCLIENT
+RESTSHARP
+var client = new HttpClient();
+var request = new HttpRequestMessage(HttpMethod.Post, "https://api.wallex.com/v1/account/money-withdrawal");
+request.Headers.Add("Accept", "application/json");
+request.Headers.Add("x-api-key", "<x-api-key>");
+var content = new StringContent("{\n  \"iban\": 3799240,\n  \"value\": 20000\n}", null, "application/json");
+request.Content = content;
+var response = await client.SendAsync(request);
+response.EnsureSuccessStatusCode();
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+
+Request
+Collapse all
+Base URL
+https://api.wallex.com
+Auth
+ApiKeyAuth
+ApiKeyAuth
+Body
+ required
+{
+  "iban": 3799240,
+  "value": 20000
+}
+Send API Request
+Response
+Clear
+Click the Send API Request button above and see the response here!
+
+قبلی
+دریافت لیست شماره شباهای حساب
+بعدی

@@ -1,0 +1,89 @@
+سرویس‌های پایهمستندات سرویسافزودن شماره شبا جدید به حساب
+افزودن شماره شبا جدید به حساب
+POST
+https://api.wallex.com/v1/account/ibans
+این API برای ثبت یک شماره شبا جدید در حساب کاربر استفاده می‌شود. نیازمند API Key در هدر است.
+
+Request
+application/json
+Body
+Example (auto)
+Bodyrequired
+iban
+string
+required
+شماره شبا بدون پیشوند IR
+
+Example: 230170000000230285711000
+Responses
+200
+پاسخ موفق
+
+application/json
+Schema
+Example (auto)
+response
+Schema
+result
+object
+message
+string
+Example: The operation was successful
+success
+boolean
+Example: true
+Authorization: x-api-key
+csharp
+curl
+dart
+go
+http
+java
+javascript
+kotlin
+c
+nodejs
+objective-c
+ocaml
+php
+postman-cli
+powershell
+python
+r
+ruby
+rust
+shell
+swift
+HTTPCLIENT
+RESTSHARP
+var client = new HttpClient();
+var request = new HttpRequestMessage(HttpMethod.Post, "https://api.wallex.com/v1/account/ibans");
+request.Headers.Add("Accept", "application/json");
+request.Headers.Add("x-api-key", "<x-api-key>");
+var content = new StringContent("{\n  \"iban\": \"230170000000230285711000\"\n}", null, "application/json");
+request.Content = content;
+var response = await client.SendAsync(request);
+response.EnsureSuccessStatusCode();
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+
+Request
+Collapse all
+Base URL
+https://api.wallex.com
+Auth
+ApiKeyAuth
+ApiKeyAuth
+Body
+ required
+{
+  "iban": "230170000000230285711000"
+}
+Send API Request
+Response
+Clear
+Click the Send API Request button above and see the response here!
+
+قبلی
+دریافت آدرس کیف‌پول کاربر برای نماد مشخص
+بعدی

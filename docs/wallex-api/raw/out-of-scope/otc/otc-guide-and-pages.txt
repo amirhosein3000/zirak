@@ -1,0 +1,430 @@
+خرید و فروش در بازار معاملاتی آنی چیست ؟
+با استفاده از معاملات آنی والکس، به گستره‌ی وسیع و متنوعی از کوین‌ها دسترسی یافته و می‌توانید کوین مورد نظر را در سریع‌‌ترین زمان و با مناسب‌ترین قیمت خریداری کرده یا به فروش برسانید.
+
+دانلود Swagger معامله آنی
+تمامی API هایی که نحوه ارسال درخواست به آن ها در ادامه گفته میشود را میتوانید از طریق لینک زیر دریافت کنید.
+
+دانلود Swagger اعتبار معاملاتیمارکت های فعال
+در ابتدا برای شروع به معامله آنی ، باید بدانیم که چه بازارهایی در این نوع معامله فعال هستند به منظور این کار شما میتوانید API زیر را فراخوانی کنید.
+
+GET /v1/otc/markets
+
+توضیحات Response-Body
+{
+  "result": {
+    "USDTTMN": {
+      "symbol": "سیمبل",
+      "baseAsset": "نام ارز",
+      "quoteAsset": "پایه بازار",
+      "faName": "نام به فارسی",
+      "enName": "نام به انگلیسی",
+      "minQty": "حداقل مقدار قابل سفارش به واحد دارایی پایه",
+      "minNotional": "حداقل ارزش سفارش",
+      "maxNotional": "حداکثر ارزش سفارش",
+      "stats": {
+        "24h_ch": "تغییرات ۲۴ ساعته",
+        "lastPrice": "آخرین قیمت"
+      },
+      "buyStatus": "وضعیت فعال بودن خرید کوین",
+      "sellStatus": "وضعیت فعال بودن فروش کوین",
+      "exchangeStatus": "وضعیت فعال بودن در اسپات"
+    }
+  },
+  "message": "عملیات با موفقیت انجام شد",
+  "success": true
+}
+
+قبلی
+خرید و فروش در بازار معاملاتی آنی چیست ؟
+بعدی
+
+
+دریافت قیمت ها در بازار آنی
+جهت دریافت قیمت ها در بازار معاملاتی آنی میتوانید از API زیر استفاده کنید. به منظور این کار باید نماد و سمت معامله به عنوان Query-Param ارسال کنید
+
+GET /v1/account/otc/price
+
+توضیحات Query-parameters
+برای فراخوانی این API میتوانید پارارمترهای مختلف خود را به عنوان Query-parameters در مسیر API ارسال کنید :
+
+Parameter	Example	Data Type	Required	Valid Values	Definition
+side	BUY	string	true	BUY | SELL	جهت تعیین سمت سفارش خود، ارسال این مقدار الزامی می‌باشد
+symbol	BTCUSDT	String	true	—	جهت دریافت قیمت باید نام مارکت را ارسال کنید
+توضیحات Response-Body
+{
+  "result": {
+    "price": "قیمت",
+    "price_expires_at": "تاریخ منقضی شدن قیمت",
+    "ttl": "ttl",
+    "current_time": "زمان اکنون"
+  },
+  "message": "عملیات با موفقیت انجام شد",
+  "success": true
+}
+
+قبلی
+بازارهای فعال در معاملات آنی
+
+ثبت سفارش در بازار آنی
+به منظور ثبت سفارش جدید در بازار معاملاتی آنی ، میتوانید از API زیر استفاده کنید.
+
+POST /v1/account/easy-trade/orders
+
+توضیحات Request-Body
+Parameter	Example	Data Type	Required	Valid Values	Definition
+side	BUY	string	true	BUY | SELL	جهت تعیین سمت سفارش خود ارسال این مقدار الزامی می‌باشد
+symbol	BTCUSDT	String	true	—	جهت دریافت قیمت باید نام مارکت را ارسال کنید
+quantity	10	Number	true	—	مقدار حجمی که قصد خریداری کوین را دارید
+from	otc	String	true	—	جهت ثبت سفارش در بازار معاملاتی آنی باید این مقدار را ارسال کنید
+توضیحات Response-Body
+{
+  "symbol": "نام ارز معامله شونده و پایه بازار",
+  "sourceMarket": "ارز معامله شونده",
+  "destinationMarket": "پایه بازار",
+  "type": "OTC",
+  "side": "سمت معامله",
+  "clientOrderId": "شناسه یکتای سفارش ",
+  "transactTime": "زمان معامله",
+  "price": "قیمت واحد",
+  "origQty": "تعداد ارز معامله شده",
+  "executedSum": "حجم معامله به پایه بازار",
+  "executedQty": "جچم معامله به ارز معامله شونده",
+  "executedPrice": "قیمتی که در آن معامله انجام شده است.",
+  "sum": "مجموع حجم معامله",
+  "executedPercent": "درصد اجرا شده",
+  "status": "وضعیت سفارش",
+  "active": "وضعیت فعال بودن سفارش",
+  "fills": [
+    {
+      "price": "قیمت",
+      "quantity": "حجم",
+      "fee": "کامزد",
+      "feeCoefficient": "ضریب کارمزد",
+      "feeAsset": {},
+      "timestamp": "زمان انجام معامله",
+      "symbol": "نام ارز معامله شومده و پایه بازار",
+      "sum": "مجموع حجم معامله",
+      "makerFeeCoefficient": "ضریب کارمزد میکر",
+      "takerFeeCoefficient": "ضریب کارمزد تیکر",
+      "isBuyer": "وضعیت خرید یا فروش بودن"
+    }
+  ]
+}
+
+قبلی
+دریافت قیمت ها در بازار آنی
+بعدی
+
+
+get otc markets
+GET
+https://api.wallex.ir/v1/otc/markets
+retrieves markets which are enabled in otc
+
+Responses
+200
+پاسخ موفق
+
+application/json
+Schema
+Example (auto)
+response
+Schema
+success
+boolean
+Example: true
+message
+string
+Example: عملیات با موفقیت انجام شد
+result
+object
+Authorization: x-api-key
+csharp
+curl
+dart
+go
+http
+java
+javascript
+kotlin
+c
+nodejs
+objective-c
+ocaml
+php
+postman-cli
+powershell
+python
+r
+ruby
+rust
+shell
+swift
+HTTPCLIENT
+RESTSHARP
+var client = new HttpClient();
+var request = new HttpRequestMessage(HttpMethod.Get, "https://api.wallex.ir/v1/otc/markets");
+request.Headers.Add("Accept", "application/json");
+request.Headers.Add("x-api-key", "<x-api-key>");
+var response = await client.SendAsync(request);
+response.EnsureSuccessStatusCode();
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+
+Request
+Collapse all
+Base URL
+https://api.wallex.ir
+Auth
+ApiKeyAuth
+ApiKeyAuth
+Send API Request
+Response
+Clear
+Click the Send API Request button above and see the response here!
+
+قبلی
+ثبت سفارش در بازار آنی
+بعدی
+
+
+get otc price
+GET
+https://api.wallex.ir/v1/account/otc/price
+retrieves otc prices
+
+Request
+Query Parameters
+symbol
+string
+required
+نماد معاملاتی مورد نظر برای دریافت قیمت OTC
+
+Example: BTCTMN
+side
+string
+required
+Possible values: [BUY, SELL]
+
+نوع عملیات؛ خرید یا فروش
+
+Example: BUY
+Responses
+200
+پاسخ موفق
+
+application/json
+Schema
+Example (auto)
+response
+Schema
+success
+boolean
+Example: true
+message
+string
+Example: عملیات با موفقیت انجام شد
+result
+object
+Authorization: x-api-key
+csharp
+curl
+dart
+go
+http
+java
+javascript
+kotlin
+c
+nodejs
+objective-c
+ocaml
+php
+postman-cli
+powershell
+python
+r
+ruby
+rust
+shell
+swift
+HTTPCLIENT
+RESTSHARP
+var client = new HttpClient();
+var request = new HttpRequestMessage(HttpMethod.Get, "https://api.wallex.ir/v1/account/otc/price");
+request.Headers.Add("Accept", "application/json");
+request.Headers.Add("x-api-key", "<x-api-key>");
+var response = await client.SendAsync(request);
+response.EnsureSuccessStatusCode();
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+
+Request
+Collapse all
+Base URL
+https://api.wallex.ir
+Auth
+ApiKeyAuth
+ApiKeyAuth
+Parameters
+symbol — queryrequired
+نماد معاملاتی مورد نظر برای دریافت قیمت OTC
+side — queryrequired
+---
+Send API Request
+Response
+Clear
+Click the Send API Request button above and see the response here!
+
+قبلی
+get otc markets
+بعدی
+create otc trade
+
+
+create otc trade
+POST
+https://api.wallex.ir/v1/account/easy-trade/orders
+create otc order
+
+Request
+application/json
+Body
+Example (auto)
+Bodyrequired
+symbol
+string
+required
+Example: BTCTMN
+side
+string
+required
+Possible values: [BUY, SELL]
+
+Example: BUY
+quantity
+float
+required
+Example: 0.000029
+from
+string
+required
+Example: otc
+Responses
+201
+پاسخ موفق
+
+application/json
+Schema
+Example (auto)
+response
+Schema
+symbol
+string
+Example: BTCTMN
+sourceMarket
+string
+Example: BTC
+destinationMarket
+string
+Example: TMN
+type
+string
+Example: OTC
+side
+string
+Example: BUY
+clientOrderId
+string
+Example: OTC-9f5fa3c6-b663-4e05-be4c-3c9ad06ee492
+transactTime
+int64
+Example: 1752331184
+price
+string
+Example: 10062689383.4710000000000000
+origQty
+string
+Example: 0.0000290000000000
+executedSum
+string
+Example: 291817.9921206590000000
+executedQty
+string
+Example: 0.0000290000000000
+executedPrice
+string
+Example: 10062689383.4710000000000000
+sum
+string
+Example: 291817.9921206590000000
+executedPercent
+number
+Example: 100
+status
+string
+Example: FILLED
+active
+boolean
+Example: false
+fills
+object[]
+Authorization: x-api-key
+csharp
+curl
+dart
+go
+http
+java
+javascript
+kotlin
+c
+nodejs
+objective-c
+ocaml
+php
+postman-cli
+powershell
+python
+r
+ruby
+rust
+shell
+swift
+HTTPCLIENT
+RESTSHARP
+var client = new HttpClient();
+var request = new HttpRequestMessage(HttpMethod.Post, "https://api.wallex.ir/v1/account/easy-trade/orders");
+request.Headers.Add("Accept", "application/json");
+request.Headers.Add("x-api-key", "<x-api-key>");
+var content = new StringContent("{\n  \"symbol\": \"BTCTMN\",\n  \"side\": \"BUY\",\n  \"quantity\": 0.000029,\n  \"from\": \"otc\"\n}", null, "application/json");
+request.Content = content;
+var response = await client.SendAsync(request);
+response.EnsureSuccessStatusCode();
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+
+Request
+Collapse all
+Base URL
+https://api.wallex.ir
+Auth
+ApiKeyAuth
+ApiKeyAuth
+Body
+ required
+{
+  "symbol": "BTCTMN",
+  "side": "BUY",
+  "quantity": 0.000029,
+  "from": "otc"
+}
+Send API Request
+Response
+Clear
+Click the Send API Request button above and see the response here!
+
+قبلی
+get otc price
+بعدی
+سوکت های و

@@ -1,0 +1,67 @@
+Get all markets
+GET
+https://api.wallex.com/hector/web/v1/markets
+Retrieve all markets
+
+Responses
+200
+OK
+
+application/json
+Schema
+Example (auto)
+Schema
+success
+boolean
+Example: true
+message
+string
+Example: The operation was successful
+result
+object
+markets
+object[]
+Authorization: x-api-key
+csharp
+curl
+dart
+go
+http
+java
+javascript
+kotlin
+c
+nodejs
+objective-c
+ocaml
+php
+postman-cli
+powershell
+python
+r
+ruby
+rust
+shell
+swift
+HTTPCLIENT
+RESTSHARP
+var client = new HttpClient();
+var request = new HttpRequestMessage(HttpMethod.Get, "https://api.wallex.com/hector/web/v1/markets");
+request.Headers.Add("Accept", "application/json");
+request.Headers.Add("x-api-key", "<x-api-key>");
+var response = await client.SendAsync(request);
+response.EnsureSuccessStatusCode();
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+
+Request
+Collapse all
+Base URL
+https://api.wallex.com
+Auth
+ApiKeyAuth
+ApiKeyAuth
+Send API Request
+Response
+Clear
+Click the Send API Request button above and see the 

@@ -1,0 +1,72 @@
+دریافت شماره کارت‌های بانکی حساب
+GET
+https://api.wallex.com/v1/account/card-numbers
+این API لیست کارت‌های بانکی کاربر را به همراه وضعیت، مالک و بانک مربوطه بازمی‌گرداند. نیازمند API Key در هدر است.
+
+Responses
+200
+پاسخ موفق
+
+application/json
+Schema
+Example (auto)
+response
+Schema
+result
+object[]
+message
+string
+Example: The operation was successful
+success
+boolean
+Example: true
+result_info
+object
+Authorization: x-api-key
+csharp
+curl
+dart
+go
+http
+java
+javascript
+kotlin
+c
+nodejs
+objective-c
+ocaml
+php
+postman-cli
+powershell
+python
+r
+ruby
+rust
+shell
+swift
+HTTPCLIENT
+RESTSHARP
+var client = new HttpClient();
+var request = new HttpRequestMessage(HttpMethod.Get, "https://api.wallex.com/v1/account/card-numbers");
+request.Headers.Add("Accept", "application/json");
+request.Headers.Add("x-api-key", "<x-api-key>");
+var response = await client.SendAsync(request);
+response.EnsureSuccessStatusCode();
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+
+Request
+Collapse all
+Base URL
+https://api.wallex.com
+Auth
+ApiKeyAuth
+ApiKeyAuth
+Send API Request
+Response
+Clear
+Click the Send API Request button above and see the response here!
+
+قبلی
+درخواست برداشت وجه از حساب
+بعدی

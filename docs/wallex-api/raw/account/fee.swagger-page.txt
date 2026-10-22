@@ -1,0 +1,71 @@
+دریافت کارمزدهای حساب
+GET
+https://api.wallex.com/v1/account/fee
+این API نرخ‌های کارمزد میکر و تیکر را برای هر بازار به همراه مجموع حجم معاملات چند روز اخیر باز می‌گرداند. نیازمند API Key در هدر است.
+
+Responses
+200
+پاسخ موفق
+
+application/json
+Schema
+Example (auto)
+response
+Schema
+success
+boolean
+Example: true
+message
+string
+Example: عملیات با موفقیت انجام شد
+result
+object
+Authorization: x-api-key
+csharp
+curl
+dart
+go
+http
+java
+javascript
+kotlin
+c
+nodejs
+objective-c
+ocaml
+php
+postman-cli
+powershell
+python
+r
+ruby
+rust
+shell
+swift
+HTTPCLIENT
+RESTSHARP
+var client = new HttpClient();
+var request = new HttpRequestMessage(HttpMethod.Get, "https://api.wallex.com/v1/account/fee");
+request.Headers.Add("Accept", "application/json");
+request.Headers.Add("x-api-key", "<x-api-key>");
+var response = await client.SendAsync(request);
+response.EnsureSuccessStatusCode();
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+
+Request
+Collapse all
+Base URL
+https://api.wallex.com
+Auth
+ApiKeyAuth
+ApiKeyAuth
+Send API Request
+Response
+Clear
+Click the Send API Request button above and see the response here!
+
+قبلی
+دریافت شماره کارت‌های بانکی حساب
+بعدی
+دریافت معاملات اخیر

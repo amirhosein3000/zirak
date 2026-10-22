@@ -1,0 +1,423 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "This is the API server for otc services",
+    "title": "Spot",
+    "version": "1.0",
+    "contact": {}
+  },
+  "host": "api.wallex.ir",
+  "basePath": "/",
+  "schemes": ["https"],
+  "paths": {
+    "/v1/otc/markets": {
+      "get": {
+        "operationId": "getOTCMarkets",
+        "summary": "get otc markets",
+        "description": "retrieves markets which are enabled in otc",
+        "tags": ["otc"],
+        "produces": ["application/json"],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "پاسخ موفق",
+            "schema": {
+              "$ref": "#/definitions/OtcMarketsResponse"
+            },
+            "examples": {
+              "application/json": {
+                "result": {
+                  "USDTTMN": {
+                    "symbol": "USDTTMN",
+                    "baseAsset": "USDT",
+                    "quoteAsset": "TMN",
+                    "faName": "تتر - تومان",
+                    "enName": "Tether - Toman",
+                    "minQty": 0.01,
+                    "minNotional": 90000,
+                    "maxNotional": 50000000,
+                    "stats": {
+                      "24h_ch": 0.14,
+                      "lastPrice": 85386
+                    },
+                    "buyStatus": "ENABLE",
+                    "sellStatus": "ENABLE",
+                    "exchangeStatus": "ENABLE"
+                  }
+                },
+                "message": "عملیات با موفقیت انجام شد",
+                "success": true
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+
+    "/v1/account/otc/price": {
+      "get": {
+        "operationId": "getOtcPrice",
+        "summary": "get otc price",
+        "description": "retrieves otc prices",
+        "tags": ["otc"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "example": "BTCTMN",
+            "description": "نماد معاملاتی مورد نظر برای دریافت قیمت OTC"
+          },
+          {
+            "name": "side",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "enum": ["BUY", "SELL"],
+            "example": "BUY",
+            "description": "نوع عملیات؛ خرید یا فروش"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "پاسخ موفق",
+            "schema": {
+              "$ref": "#/definitions/OtcPriceResponse"
+            },
+            "examples": {
+              "application/json": {
+                "result": {
+                  "price": "10060906814.238",
+                  "price_expires_at": "2025-07-12T14:37:12Z",
+                  "ttl": 17,
+                  "current_time": "2025-07-12T14:36:55Z"
+                },
+                "message": "عملیات با موفقیت انجام شد",
+                "success": true
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+
+    "/v1/account/easy-trade/orders": {
+      "post": {
+        "operationId": "placeEasyTradeOrder",
+        "summary": "create otc trade",
+        "description": "create otc order",
+        "tags": ["otc"],
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/EasyTradeOrderRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "پاسخ موفق",
+            "schema": {
+              "$ref": "#/definitions/EasyTradeOrderResponse"
+            },
+            "examples": {
+              "application/json": {
+                "symbol": "BTCTMN",
+                "sourceMarket": "BTC",
+                "destinationMarket": "TMN",
+                "type": "OTC",
+                "side": "BUY",
+                "clientOrderId": "OTC-9f5fa3c6-b663-4e05-be4c-3c9ad06ee492",
+                "transactTime": 1752331184,
+                "price": "10062689383.4710000000000000",
+                "origQty": "0.0000290000000000",
+                "executedSum": "291817.9921206590000000",
+                "executedQty": "0.0000290000000000",
+                "executedPrice": "10062689383.4710000000000000",
+                "sum": "291817.9921206590000000",
+                "executedPercent": 100,
+                "status": "FILLED",
+                "active": false,
+                "fills": [
+                  {
+                    "price": "10062689383.4710000000000000",
+                    "quantity": "0.0000290000000000",
+                    "fee": "0.000000",
+                    "feeCoefficient": "0.0000000000000000",
+                    "feeAsset": {},
+                    "timestamp": "2025-07-12T14:39:44Z",
+                    "symbol": "BTCTMN",
+                    "sum": "291817.9921206590000000",
+                    "makerFeeCoefficient": "0",
+                    "takerFeeCoefficient": "0",
+                    "isBuyer": true
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    }
+  },
+
+  "definitions": {
+    "OtcMarketsResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "example": true
+        },
+        "message": {
+          "type": "string",
+          "example": "عملیات با موفقیت انجام شد"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/OtcMarket"
+          }
+        }
+      }
+    },
+    "OtcMarket": {
+      "type": "object",
+      "properties": {
+        "symbol": { "type": "string", "example": "BTCUSDT" },
+        "baseAsset": { "type": "string", "example": "BTC" },
+        "baseAsset_png_icon": { "type": "string", "format": "uri" },
+        "baseAsset_svg_icon": { "type": "string", "format": "uri" },
+        "baseAssetPrecision": { "type": "integer", "example": 8 },
+        "quoteAsset": { "type": "string", "example": "USDT" },
+        "quoteAsset_png_icon": { "type": "string", "format": "uri" },
+        "quoteAsset_svg_icon": { "type": "string", "format": "uri" },
+        "quotePrecision": { "type": "integer", "example": 8 },
+        "faName": { "type": "string", "example": "بیت کوین - تتر" },
+        "enName": { "type": "string", "example": "Bitcoin - Tether" },
+        "faBaseAsset": { "type": "string", "example": "بیت کوین" },
+        "enBaseAsset": { "type": "string", "example": "Bitcoin" },
+        "faQuoteAsset": { "type": "string", "example": "تتر" },
+        "enQuoteAsset": { "type": "string", "example": "Tether" },
+        "stepSize": { "type": "integer", "example": 2 },
+        "tickSize": { "type": "integer", "example": 0 },
+        "minQty": { "type": "number", "format": "float", "example": 0.01 },
+        "minNotional": {
+          "type": "number",
+          "format": "float",
+          "example": 90000
+        },
+        "maxNotional": {
+          "type": "number",
+          "format": "float",
+          "example": 50000000
+        },
+        "stats": {
+          "type": "object",
+          "properties": {
+            "24h_ch": { "type": "number", "format": "float", "example": -0.56 },
+            "lastPrice": {
+              "type": "number",
+              "format": "float",
+              "example": 116795.22
+            },
+            "24h_highPrice": {
+              "type": "number",
+              "format": "float",
+              "example": 118679
+            },
+            "24h_lowPrice": {
+              "type": "number",
+              "format": "float",
+              "example": 115000
+            },
+            "24h_volume": { "type": "number", "format": "float", "example": 0 }
+          }
+        },
+        "buyStatus": {
+          "type": "string",
+          "enum": ["ENABLE", "DISABLE"],
+          "example": "ENABLE"
+        },
+        "sellStatus": {
+          "type": "string",
+          "enum": ["ENABLE", "DISABLE"],
+          "example": "ENABLE"
+        },
+        "exchangeStatus": {
+          "type": "string",
+          "enum": ["ENABLE", "DISABLE"],
+          "example": "ENABLE"
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isNew": { "type": "boolean", "example": false },
+        "isZeroFee": { "type": "boolean", "example": false },
+        "flags": {
+          "type": "array",
+          "items": {}
+        }
+      }
+    },
+
+    "OtcPriceResponse": {
+      "type": "object",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "example": true
+        },
+        "message": {
+          "type": "string",
+          "example": "عملیات با موفقیت انجام شد"
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "price": {
+              "type": "string",
+              "example": "10060906814.238"
+            },
+            "price_expires_at": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2025-07-12T14:37:12Z"
+            },
+            "ttl": {
+              "type": "integer",
+              "example": 17,
+              "description": "زمان اعتبار قیمت بر حسب ثانیه"
+            },
+            "current_time": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2025-07-12T14:36:55Z"
+            }
+          }
+        }
+      }
+    },
+
+    "EasyTradeOrderRequest": {
+      "type": "object",
+      "required": ["symbol", "side", "quantity", "from"],
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "example": "BTCTMN"
+        },
+        "side": {
+          "type": "string",
+          "enum": ["BUY", "SELL"],
+          "example": "BUY"
+        },
+        "quantity": {
+          "type": "number",
+          "format": "float",
+          "example": 0.000029
+        },
+        "from": {
+          "type": "string",
+          "example": "otc"
+        }
+      }
+    },
+
+    "EasyTradeOrderResponse": {
+      "type": "object",
+      "properties": {
+        "symbol": { "type": "string", "example": "BTCTMN" },
+        "sourceMarket": { "type": "string", "example": "BTC" },
+        "destinationMarket": { "type": "string", "example": "TMN" },
+        "type": { "type": "string", "example": "OTC" },
+        "side": { "type": "string", "example": "BUY" },
+        "clientOrderId": {
+          "type": "string",
+          "example": "OTC-9f5fa3c6-b663-4e05-be4c-3c9ad06ee492"
+        },
+        "transactTime": {
+          "type": "integer",
+          "format": "int64",
+          "example": 1752331184
+        },
+        "price": {
+          "type": "string",
+          "example": "10062689383.4710000000000000"
+        },
+        "origQty": { "type": "string", "example": "0.0000290000000000" },
+        "executedSum": {
+          "type": "string",
+          "example": "291817.9921206590000000"
+        },
+        "executedQty": { "type": "string", "example": "0.0000290000000000" },
+        "executedPrice": {
+          "type": "string",
+          "example": "10062689383.4710000000000000"
+        },
+        "sum": { "type": "string", "example": "291817.9921206590000000" },
+        "executedPercent": { "type": "number", "example": 100 },
+        "status": { "type": "string", "example": "FILLED" },
+        "active": { "type": "boolean", "example": false },
+        "fills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EasyTradeFill"
+          }
+        }
+      }
+    },
+
+    "EasyTradeFill": {
+      "type": "object",
+      "properties": {
+        "price": {
+          "type": "string",
+          "example": "10062689383.4710000000000000"
+        },
+        "quantity": { "type": "string", "example": "0.0000290000000000" },
+        "fee": { "type": "string", "example": "0.000000" },
+        "feeCoefficient": { "type": "string", "example": "0.0000000000000000" },
+        "feeAsset": { "type": "object" },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "example": "2025-07-12T14:39:44Z"
+        },
+        "symbol": { "type": "string", "example": "BTCTMN" },
+        "sum": { "type": "string", "example": "291817.9921206590000000" },
+        "makerFeeCoefficient": { "type": "string", "example": "0" },
+        "takerFeeCoefficient": { "type": "string", "example": "0" },
+        "isBuyer": { "type": "boolean", "example": true }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "ApiKeyAuth": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "x-api-key",
+      "description": "Use your API key to authenticate requests."
+    }
+  }
+}

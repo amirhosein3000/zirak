@@ -1,0 +1,119 @@
+Get historical market data (candles)
+GET
+https://api.wallex.com/v1/udf/history
+Retrieve historical OHLCV data for a symbol. Useful for charting and analysis.
+
+Request
+Query Parameters
+symbol
+string
+required
+The symbol to retrieve historical data for
+
+Example: BTCTMN
+resolution
+string
+required
+Candle resolution (e.g. 1, 5, 15, 60, D)
+
+Example: 60
+from
+int64
+required
+Start of time range (Unix timestamp)
+
+Example: 1733425200
+to
+int64
+required
+End of time range (Unix timestamp)
+
+Example: 1733428800
+Responses
+200
+Successful response
+
+application/json
+Schema
+Example (auto)
+response
+Schema
+s
+string
+Example: ok
+t
+int64[]
+Example: [1733425200,1733428800]
+c
+string[]
+Example: ["7209722048.0000000000000000","7235725819.0000000000000000"]
+o
+string[]
+Example: ["7286137604.0000000000000000","7200151050.0000000000000000"]
+h
+string[]
+Example: ["7286137604.0000000000000000","7235725819.0000000000000000"]
+l
+string[]
+Example: ["7209722048.0000000000000000","7150000001.0000000000000000"]
+v
+string[]
+Example: ["0.2544820000000000","1.0201680000000000"]
+Authorization: x-api-key
+csharp
+curl
+dart
+go
+http
+java
+javascript
+kotlin
+c
+nodejs
+objective-c
+ocaml
+php
+postman-cli
+powershell
+python
+r
+ruby
+rust
+shell
+swift
+HTTPCLIENT
+RESTSHARP
+var client = new HttpClient();
+var request = new HttpRequestMessage(HttpMethod.Get, "https://api.wallex.com/v1/udf/history");
+request.Headers.Add("Accept", "application/json");
+request.Headers.Add("x-api-key", "<x-api-key>");
+var response = await client.SendAsync(request);
+response.EnsureSuccessStatusCode();
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+
+Request
+Collapse all
+Base URL
+https://api.wallex.com
+Auth
+ApiKeyAuth
+ApiKeyAuth
+Parameters
+symbol — queryrequired
+The symbol to retrieve historical data for
+resolution — queryrequired
+Candle resolution (e.g. 1, 5, 15, 60, D)
+from — queryrequired
+Start of time range (Unix timestamp)
+to — queryrequired
+End of time range (Unix timestamp)
+Send API Request
+Response
+Clear
+Click the Send API Request button above and see the response here!
+
+قبلی
+Get account balances
+بعدی
+معامله اسپات چیست؟
