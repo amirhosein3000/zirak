@@ -341,7 +341,33 @@ def test_competition_runs_writes_files_and_team_stop_kills(tmp_path: Path) -> No
     a = next(e for e in perf["entries"] if e["name"] == "a")
     assert D(a["start_equity"]) == s.paper_start_tmn * D("0.4")  # its sleeve, not the whole account
     assert (out / "trades.jsonl").read_text(encoding="utf-8").strip()
-    assert (out / "equity.csv").read_text(encoding="utf-8").startswith("ts,total_equity_tmn")
+    assert (
+        (out / "equity.csv")
+        .read_text(encoding="utf-8")
+        .startswith("timestamp_utc,total_value_tmn,drawdown_pct")
+    )
+    import csv
+
+    with (out / "orders.csv").open(encoding="utf-8") as f:
+        rows = list(csv.reader(f))
+    assert rows[0] == [
+        "timestamp_utc",
+        "client_order_id",
+        "symbol",
+        "side",
+        "type",
+        "price",
+        "quantity",
+        "status",
+        "filled_quantity",
+        "avg_price",
+        "fee",
+        "fee_asset",
+        "reason",
+    ]
+    assert len(rows) > 2 and {r[7] for r in rows[1:]} >= {"FILLED"}
+    report = __import__("json").loads((out / "report.json").read_text(encoding="utf-8"))
+    assert report["start_value_tmn"] and "max_drawdown_pct" in report and report["trades"] >= 0
 
 
 def test_competition_team_drawdown_engages_kill_switch(tmp_path: Path) -> None:

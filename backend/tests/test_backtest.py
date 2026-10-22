@@ -143,3 +143,10 @@ def test_daily_loss_limit_halts_the_whole_pipeline(market: Market) -> None:
     assert later_buys and all(not t["decision"]["approved"] for t in later_buys)
     assert {t["decision"]["code"] for t in later_buys} == {"daily_loss_limit"}
     assert D(report["open_position_qty"]) == 0
+
+
+def test_plain_decimal_text() -> None:
+    from zirak.engine.bot import plain
+
+    assert plain(D("2.99375E-7")) == "0.000000299375"
+    assert plain(D("20887049125")) == "20887049125" and plain(D("1.500")) == "1.5" and plain(None) == ""

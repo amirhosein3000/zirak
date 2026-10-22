@@ -187,6 +187,12 @@ class BotRunner:
             raise RunnerError(f"not enough live {resolution} history for {symbol}")
         rm = self._risk(risk, market, fees)
         if real:
+            # Orders we didn't place (manual, or a previous run's) are invisible to the bot's ledger.
+            stray = await self.live.get_open_orders(symbol)
+            if stray:
+                raise RunnerError(
+                    f"{len(stray)} open order(s) on {symbol} were not placed by this bot; cancel them first"
+                )
             # The hard per-order cap from the environment also caps the strategy's own sizing.
             cap = self.settings.max_order_for_quote(market.quote)
             if cap is not None:

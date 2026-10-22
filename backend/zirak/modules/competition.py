@@ -12,7 +12,9 @@ and cancels all orders. `zirak kill` from any terminal does the same.
 
 It writes `<DATA_DIR>/competition/<name>/`:
 - `performance.json` (rewritten atomically every few seconds: equity, PnL, drawdown, trades per entry),
-- `trades.jsonl` (one line per decision, appended), `equity.csv` (timestamp, total equity in TMN).
+- `trades.jsonl` (one line per decision, appended), `orders.csv` (one row per order state change,
+  columns `orders_columns`), `equity.csv` (timestamp, total value in TMN, drawdown from peak),
+- `report.json` when the run ends (start/end value, PnL, max drawdown, trades, git commit).
 USDT equity is converted to Toman with the latest USDTTMN price (shown in the file).
 """
 
@@ -20,7 +22,9 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import csv
 import json
+import subprocess
 from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
@@ -29,7 +33,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from zirak.config import Settings
+from zirak.config import REPO_ROOT, Settings
 from zirak.engine.risk import RiskConfig
 from zirak.engine.runner import BotRunner, RunnerError
 from zirak.exchange.base import ExchangeClient
@@ -39,6 +43,12 @@ from zirak.strategy.base import Strategy
 from zirak.strategy.presets import spec_for
 from zirak.strategy.registry import build_strategy
 from zirak.strategy.spec import RuleStrategy, StrategySpec
+
+#: default `orders.csv` columns (keys of `Bot.order_events`)
+ORDERS_COLUMNS = [
+    "timestamp_utc", "client_order_id", "symbol", "side", "type", "price", "quantity", "status",
+    "filled_quantity", "avg_price", "fee", "fee_asset", "reason",
+]  # fmt: skip
 
 
 class EntryIn(BaseModel):
@@ -59,6 +69,7 @@ class CompetitionIn(BaseModel):
     daily_loss_pct: Decimal = Field(Decimal(3), gt=0, le=100)  # team-level stop, per UTC day
     speed_s: float = Field(0.2, ge=0.0, le=30)  # replay only: seconds per candle
     write_every_s: float = Field(5.0, ge=0.05, le=300)
+    orders_columns: list[str] = Field(default_factory=lambda: list(ORDERS_COLUMNS))
 
 
 # Conservative default team (docs/research.md "Default for competition mode"): the dip-buy preset on the two
@@ -102,6 +113,17 @@ def _risk(e: EntryIn, team: dict[str, Any]) -> RiskConfig:
     return RiskConfig.from_dict(team)
 
 
+def git_commit() -> str | None:
+    """The commit this code runs from (for report.json), or None outside a git checkout."""
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, timeout=5, check=True
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return out.stdout.strip() or None
+
+
 def _strategy(e: EntryIn) -> Strategy:
     if e.strategy == "rules":
         if e.spec is None:
@@ -123,6 +145,8 @@ class Competition:
     stopped_reason: str | None = None
     task: asyncio.Task[None] | None = None
     _logged: dict[str, int] = field(default_factory=dict)
+    _orders_logged: dict[str, int] = field(default_factory=dict)
+    max_dd: Decimal = ZERO
 
     @property
     def out_dir(self) -> Path:
@@ -176,10 +200,10 @@ class Competition:
                     if reason:
                         self.stopped_reason = reason
                         await self.kill(reason)
-                        self._write(await self.performance())
+                        self._finish(await self.performance())
                         return
                 if not self.running:
-                    self._write(await self.performance())
+                    self._finish(await self.performance())
                     return
                 await asyncio.sleep(self.config.write_every_s)
         except asyncio.CancelledError:
@@ -194,6 +218,7 @@ class Competition:
         if today != self.day:
             self.day, self.day_start = today, total
         dd = (self.peak - total) / self.peak * HUNDRED
+        self.max_dd = max(self.max_dd, dd)
         if dd >= self.config.max_drawdown_pct:
             return f"team drawdown {dd:.2f}% >= {self.config.max_drawdown_pct}%"
         if self.day_start > 0:
@@ -263,6 +288,7 @@ class Competition:
                 }
             )
             self._append_trades(name, runner)
+            self._append_orders(name, runner)
         pnl_pct = (total / start_total - 1) * HUNDRED if start_total > 0 else ZERO
         peak = max(self.peak, total)
         return {
@@ -306,6 +332,24 @@ class Competition:
                 f.write(json.dumps({"entry": name, **e.to_dict()}, ensure_ascii=False) + "\n")
         self._logged[name] = done + len(final)
 
+    def _append_orders(self, name: str, runner: BotRunner) -> None:
+        if runner.bot is None:
+            return
+        done = self._orders_logged.get(name, 0)
+        new = runner.bot.order_events[done:]
+        if not new:
+            return
+        path = self.out_dir / "orders.csv"
+        cols = self.config.orders_columns
+        fresh = not path.exists()
+        with path.open("a", encoding="utf-8", newline="") as f:
+            w = csv.writer(f)
+            if fresh:
+                w.writerow(cols)
+            for ev in new:
+                w.writerow([ev.get(c, "") for c in cols])
+        self._orders_logged[name] = done + len(new)
+
     def _write(self, perf: dict[str, Any]) -> None:
         out = {**perf, "data_day": str(perf["data_day"]) if perf.get("data_day") else None}
         tmp = self.out_dir / "performance.json.tmp"
@@ -315,8 +359,31 @@ class Competition:
         new = not eq.exists()
         with eq.open("a", encoding="utf-8") as f:
             if new:
-                f.write("ts,total_equity_tmn,pnl_pct\n")
-            f.write(f"{perf['updated_at']},{perf['total_equity_tmn']},{perf['pnl_pct']}\n")
+                f.write("timestamp_utc,total_value_tmn,drawdown_pct,pnl_pct\n")
+            f.write(
+                f"{perf['updated_at']},{perf['total_equity_tmn']},{perf['drawdown_from_peak_pct']},{perf['pnl_pct']}\n"
+            )
+
+    def _finish(self, perf: dict[str, Any]) -> None:
+        """Last performance write plus the final `report.json`."""
+        self._write(perf)
+        report = {
+            "name": self.config.name,
+            "finished_at": perf["updated_at"],
+            "mode": perf["mode"],
+            "start_value_tmn": perf["start_equity_tmn"],
+            "end_value_tmn": perf["total_equity_tmn"],
+            "pnl_tmn": str(Decimal(perf["total_equity_tmn"]) - Decimal(perf["start_equity_tmn"])),
+            "pnl_pct": perf["pnl_pct"],
+            "max_drawdown_pct": str(self.max_dd.quantize(Decimal("0.001"))),
+            "trades": sum(e["trades"] for e in perf["entries"]),
+            "stopped_reason": self.stopped_reason,
+            "commit": git_commit(),
+            "entries": perf["entries"],
+        }
+        (self.out_dir / "report.json").write_text(
+            json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8"
+        )
 
     async def kill(self, reason: str = "manual") -> None:
         for r in self.runners.values():
@@ -330,7 +397,7 @@ class Competition:
             with contextlib.suppress(asyncio.CancelledError):
                 await self.task
         if self.runners:
-            self._write(await self.performance())
+            self._finish(await self.performance())
 
 
 # ---- API ---------------------------------------------------------------------------------------

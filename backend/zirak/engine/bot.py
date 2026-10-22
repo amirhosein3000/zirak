@@ -28,6 +28,14 @@ from zirak.models import ZERO, Candle, Market, Order, Side, resolution_delta, ut
 from zirak.strategy.base import COLUMNS, Frame, Signal, Strategy, StrategyContext
 
 
+def plain(d: Decimal | None) -> str:
+    """Fixed-point text for logs and CSVs (never scientific notation like 2.9E-7)."""
+    if d is None:
+        return ""
+    text = format(d, "f")
+    return text.rstrip("0").rstrip(".") if "." in text else text
+
+
 class SimClock:
     """A settable clock so simulated orders get simulated timestamps."""
 
@@ -142,6 +150,9 @@ class Bot:
         self.equity_curve: list[EquityPoint] = []
         self._seen: dict[str, _Seen] = {}
         self._open: dict[str, LogEntry] = {}  # order id -> log entry, for orders still being filled
+        #: one row per order state change (status or filled quantity), for audit logs (e.g. orders.csv)
+        self.order_events: list[dict[str, Any]] = []
+        self._order_state: dict[str, tuple[str, Decimal]] = {}
         self.stopped = False
         self.last_price: Decimal | None = None
         #: candle-mode paper fills (backtests/replays). Live paper trading fills on order-book snapshots.
@@ -302,6 +313,7 @@ class Bot:
     def _track(self, order: Order, entry: LogEntry) -> None:
         """Apply new fills of `order` and keep watching it while it is open."""
         self._apply_order_delta(order, entry)
+        self._record_event(order, entry)
         if order.status.is_open:
             self._open[order.id] = entry
             return
@@ -309,6 +321,32 @@ class Bot:
         self._seen.pop(order.id, None)
         if order.side is Side.SELL and entry.pnl is not None:
             self.ledger.exits.append(entry.pnl)
+
+    def _record_event(self, order: Order, entry: LogEntry) -> None:
+        state = (order.status.value, order.filled_qty)
+        if self._order_state.get(order.id) == state:
+            return
+        self._order_state[order.id] = state
+        if not order.status.is_open:
+            self._order_state.pop(order.id, None)
+        avg = order.avg_price
+        self.order_events.append(
+            {
+                "timestamp_utc": (self.clock() if self.clock is not None else utcnow()).isoformat(),
+                "client_order_id": order.id,
+                "symbol": order.symbol,
+                "side": order.side.value.upper(),
+                "type": order.type.value.upper(),
+                "price": plain(order.price),
+                "quantity": plain(order.qty),
+                "status": order.status.value.upper(),
+                "filled_quantity": plain(order.filled_qty),
+                "avg_price": plain(avg),
+                "fee": plain(order.fee),
+                "fee_asset": order.fee_asset,
+                "reason": entry.note_fa,
+            }
+        )
 
     def _apply_order_delta(self, order: Order, entry: LogEntry) -> None:
         seen = self._seen.setdefault(order.id, _Seen())
