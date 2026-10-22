@@ -36,6 +36,7 @@ from zirak.exchange.base import ExchangeClient
 from zirak.exchange.replay import ReplayExchange
 from zirak.models import HUNDRED, ZERO, utcnow
 from zirak.strategy.base import Strategy
+from zirak.strategy.presets import spec_for
 from zirak.strategy.registry import build_strategy
 from zirak.strategy.spec import RuleStrategy, StrategySpec
 
@@ -60,36 +61,45 @@ class CompetitionIn(BaseModel):
     write_every_s: float = Field(5.0, ge=0.05, le=300)
 
 
-# Conservative default team: small sleeves, different markets/styles, cash kept in reserve.
+# Conservative default team (docs/research.md "Default for competition mode"): the dip-buy preset on the two
+# main Toman markets, half of the capital in reserve, tight team limits.
 DEFAULT_CONFIG: dict[str, Any] = {
     "name": "default",
     "entries": [
         {
-            "name": "btc_rsi",
-            "strategy": "rsi_reversion",
+            "name": "btc_dip",
+            "strategy": "rules",
+            "spec": spec_for("dip3_tp5", "BTCTMN"),
             "symbol": "BTCTMN",
             "resolution": "1h",
             "capital_pct": 25,
         },
         {
-            "name": "eth_rsi",
-            "strategy": "rsi_reversion",
+            "name": "eth_dip",
+            "strategy": "rules",
+            "spec": spec_for("dip3_tp5", "ETHTMN"),
             "symbol": "ETHTMN",
             "resolution": "1h",
-            "capital_pct": 20,
-        },
-        {
-            "name": "btc_trend",
-            "strategy": "ema_cross",
-            "symbol": "BTCTMN",
-            "resolution": "1h",
-            "capital_pct": 20,
+            "capital_pct": 25,
         },
     ],
-    "risk": {"stop_loss_pct": 3, "max_position_pct": 80, "daily_loss_limit_pct": 2, "cooldown_candles": 2},
+    "risk": {"stop_loss_pct": 5, "max_position_pct": 80, "daily_loss_limit_pct": 2, "cooldown_candles": 2},
     "max_drawdown_pct": 8,
     "daily_loss_pct": 3,
 }
+
+
+def _risk(e: EntryIn, team: dict[str, Any]) -> RiskConfig:
+    """Team risk settings, plus a rules entry's own take-profit / stop / cooldown unless the team overrides."""
+    if e.strategy == "rules" and e.spec is not None:
+        spec = StrategySpec.model_validate(e.spec)
+        own = {
+            "stop_loss_pct": spec.stop_loss_pct,
+            "take_profit_pct": spec.take_profit_pct,
+            "cooldown_candles": spec.cooldown_candles,
+        }
+        return RiskConfig.from_dict({**own, **team})
+    return RiskConfig.from_dict(team)
 
 
 def _strategy(e: EntryIn) -> Strategy:
@@ -131,7 +141,6 @@ class Competition:
             raise RunnerError(f"capital_pct adds up to more than 100 % for {', '.join(over)}")
         self.out_dir.mkdir(parents=True, exist_ok=True)
         start_for = {"TMN": self.settings.paper_start_tmn, "USDT": self.settings.paper_start_usdt}
-        risk = RiskConfig.from_dict(self.config.risk)
         try:
             for e in self.config.entries:
                 runner = BotRunner(self.settings, self.replay.fork(), self.live)
@@ -140,7 +149,7 @@ class Competition:
                 capital = start_for.get(quote, ZERO) * e.capital_pct / HUNDRED
                 await runner.start(
                     _strategy(e),
-                    RiskConfig.from_dict(risk.to_dict()),
+                    _risk(e, self.config.risk),
                     e.symbol,
                     e.resolution,
                     initial_quote=capital,

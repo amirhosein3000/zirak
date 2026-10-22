@@ -9,7 +9,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from zirak.config import SAMPLE_DATA_DIR, WALLEX_SAMPLE_DIR, load_settings
+from zirak.config import REPO_ROOT, SAMPLE_DATA_DIR, WALLEX_SAMPLE_DIR, load_settings
 
 
 def _json_arg(raw: str | None) -> dict[str, Any]:
@@ -140,6 +140,58 @@ def cmd_paper(args: argparse.Namespace) -> int:
         asyncio.run(run())
     except KeyboardInterrupt:
         print("interrupted")
+    return 0
+
+
+def cmd_research(args: argparse.Namespace) -> int:
+    """Walk-forward research over every strategy x market x resolution; writes a JSON results file."""
+    import json
+
+    from zirak.backtest.walkforward import GRIDS, walk_forward
+    from zirak.data.source import build_replay
+    from zirak.fees import FeeModel
+
+    s = load_settings()
+    replay, label = build_replay(s)
+    fees = FeeModel(s.fee_maker, s.fee_taker)
+    # resolution -> (train, test) window in candles
+    windows = {"1h": (480, 240), "4h": (120, 60), "1d": (120, 60)}
+    symbols = _symbols(args, s.markets)
+    results = []
+
+    async def run() -> None:
+        for res, (train, test) in windows.items():
+            for symbol in symbols:
+                series = replay.series(symbol, res)
+                market = replay.markets.get(symbol)
+                if market is None or len(series) < train + test + 100:
+                    continue
+                initial = s.paper_start_tmn if market.quote == "TMN" else s.paper_start_usdt
+                for key in GRIDS:
+                    wf = await walk_forward(
+                        key, market, res, series, train, test, fees, s.slippage_bps, initial
+                    )
+                    results.append(wf.to_dict())
+                    print(
+                        f"{res:3s} {symbol:8s} {key:14s} oos {wf.oos_return_pct:+8.2f}% dd {wf.oos_max_dd_pct:7.2f}% "
+                        f"trades {wf.oos_trades:3d} | b&h {wf.bh_return_pct:+8.2f}% dd {wf.bh_max_dd_pct:7.2f}% "
+                        f"| {wf.verdict}"
+                    )
+
+    asyncio.run(run())
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    meta = {
+        "data": label,
+        "fee_taker_pct": str(s.fee_taker_pct),
+        "fee_maker_pct": str(s.fee_maker_pct),
+        "slippage_bps": str(s.slippage_bps),
+        "windows": windows,
+    }
+    out.write_text(
+        json.dumps({"meta": meta, "results": results}, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+    print(f"wrote {out} ({sum(r['survives'] for r in results)} of {len(results)} configurations survive)")
     return 0
 
 
@@ -370,6 +422,11 @@ def main(argv: list[str] | None = None) -> int:
         else:
             sp.add_argument("--speed", type=float, default=0.2, help="seconds per candle")
         sp.set_defaults(fn=fn)
+
+    sp = sub.add_parser("research", help="walk-forward strategy research (out-of-sample only)")
+    sp.add_argument("--symbols", help="comma list; default MARKETS")
+    sp.add_argument("--out", default=str(REPO_ROOT / "docs" / "research-results.json"))
+    sp.set_defaults(fn=cmd_research)
 
     sp = sub.add_parser("compete", help="competition mode: several paper strategies with team limits")
     sp.add_argument("--config", help="CompetitionIn JSON string or file (default: conservative preset)")

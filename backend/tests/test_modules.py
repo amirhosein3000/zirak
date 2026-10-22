@@ -392,12 +392,20 @@ def test_competition_api_and_capital_check(tmp_path: Path) -> None:
             **cfg,
             "entries": [
                 {**cfg["entries"][0], "capital_pct": 80},
-                {**cfg["entries"][1], "capital_pct": 0.5},
-                {**cfg["entries"][2], "capital_pct": 30},
+                {**cfg["entries"][1], "capital_pct": 30},
             ],
         }
         assert c.post("/api/m/competition/start", json=bad).status_code == 422  # 110 % of TMN
         r = c.post("/api/m/competition/start", json={**cfg, "speed_s": 0.05}).json()
-        assert len(r["entries"]) == 3
+        assert [e["name"] for e in r["entries"]] == ["btc_dip", "eth_dip"]
         k = c.post("/api/m/competition/kill").json()
         assert k["kill_engaged"] and not k["running"]
+
+
+def test_rules_entry_keeps_its_take_profit() -> None:
+    from zirak.modules.competition import DEFAULT_CONFIG, CompetitionIn, _risk
+
+    cfg = CompetitionIn.model_validate(DEFAULT_CONFIG)
+    risk = _risk(cfg.entries[0], cfg.risk)
+    assert risk.take_profit_pct == D("5") and risk.stop_loss_pct == D("5")
+    assert risk.daily_loss_limit_pct == D("2")
