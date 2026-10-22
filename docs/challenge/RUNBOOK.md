@@ -37,7 +37,7 @@ Temporarily set `LIVE_TRADING=true` (all live conditions must hold), then:
 zirak agent probe --symbol USDTTMN --yes
 ```
 It prints balances (credit account), the plan's warning/liquidation limits, fees, then places ONE tiny
-LIMIT buy 30 % below the market, reads it back, lists open orders, cancels it and reads it again.
+LIMIT buy 5 % below the bid (Wallex rejects prices outside its ~8 % fair-price band), reads it back, lists open orders, cancels it and reads it again.
 Check and note in `docs/wallex-api/README.md`: order status names, `openOrders` shape, fee unit, whether
 the sub-account header is needed. Set `LIVE_TRADING=false` again.
 

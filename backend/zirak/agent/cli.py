@@ -254,10 +254,19 @@ def cmd_probe(args: argparse.Namespace) -> int:
             m = markets[args.symbol]
             book = await c.get_order_book(args.symbol)
             assert book.best_bid is not None
-            price = m.round_price(book.best_bid * Decimal("0.7"), Side.SELL)
+            # 5 % below the bid: far enough not to fill, inside the band Wallex accepts around its fair
+            # price (`fair_price.spot.max_acceptable_buy` = 8 % on 2026-10-23; 30 % away was rejected, 422)
+            price = m.round_price(book.best_bid * Decimal("0.95"), Side.SELL)
             qty = m.round_qty(m.min_notional * Decimal("1.05") / price) + m.qty_step
-            print(f"placing BUY {qty} {args.symbol} @ {price} (30 % below the best bid {book.best_bid})")
-            o = await c.place_order(OrderRequest(args.symbol, Side.BUY, OrderType.LIMIT, qty, price, "probe"))
+            print(f"placing BUY {qty} {args.symbol} @ {price} (5 % below the best bid {book.best_bid})")
+            try:
+                o = await c.place_order(
+                    OrderRequest(args.symbol, Side.BUY, OrderType.LIMIT, qty, price, "probe")
+                )
+            except WallexAPIError as e:
+                print(f"order REJECTED: {e}")
+                print(f"full body: {e.body}")
+                raise SystemExit(1) from e
             print("placed:", o.to_dict())
             print("read back:", (await c.get_order(args.symbol, o.id)).to_dict())
             print("open orders:", [x.to_dict() for x in await c.get_open_orders(args.symbol)])
